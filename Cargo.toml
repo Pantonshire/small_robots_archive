@@ -1,0 +1,22 @@
+[package]
+name = "sbb_archive"
+version = "0.1.0"
+authors = ["Tom Panton <pantonshire@gmail.com>"]
+edition = "2018"
+license = "MIT"
+
+[profile.release]
+codegen-units = 1
+lto = "fat"
+
+[features]
+default = ["dotenv"]
+tls = ["actix-web/rustls"]
+
+[dependencies]
+actix-web = "4.0.0-beta.8"
+actix-files = "0.6.0-beta.6"
+sqlx = { version = "0.5", features = ["runtime-actix-rustls", "postgres", "chrono"] }
+chrono = "0.4"
+maud = "0.22"
+dotenv = { version = "0.15", optional = true }

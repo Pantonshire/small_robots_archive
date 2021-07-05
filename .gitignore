@@ -1,0 +1,12 @@
+# OS specific
+.DS_Store
+
+# Build
+/target/
+
+# Configuration
+.env
+
+# IDE
+.vscode
+.idea

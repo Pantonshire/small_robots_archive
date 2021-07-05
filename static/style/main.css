@@ -1,0 +1,129 @@
+body {
+    min-height: 100vh;
+    display: grid;
+    grid-template-areas:
+        "header"
+        "main"
+        "footer";
+    grid-template-rows: auto 1fr auto;
+    margin: 0;
+    padding: 0;
+    font-family: Gill Sans, Gill Sans MT, Calibri, sans-serif;
+    font-size: 1.2rem;
+    font-weight: 300;
+}
+
+h1 {
+    font-size: 3rem;
+}
+
+ul {
+    list-style: square;
+}
+
+li {
+    margin-top: 0.4em;
+    margin-bottom: 0.4em;
+}
+
+a {
+    font-weight: 500;
+    transition: color 0.1s ease-out;
+}
+
+a, a:link, a:visited {
+    color: #7A3E76;
+}
+
+a:hover {
+    color: #C185BD;
+}
+
+.content {
+    max-width: 70rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+/*
+FCFAFA
+414361
+2A2D43
+5398BE
+3E7FA3
+A1867F
+CFA0CC (small robots book)
+*/
+
+.colour {
+    background-color: #C185BD;
+    color: #FFFFFF;
+}
+
+.title_banner {
+    display: flex;
+    flex-direction: row;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.title_banner h1 {
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+    font-size: 3.5rem;
+}
+
+.title_banner h2 {
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+    font-weight: 300;
+    font-size: 2rem;
+}
+
+.banner_image_container {
+    margin-left: 1.5rem;
+}
+
+.banner_image {
+    max-height: 7rem;
+    height: 100%;
+    width: auto;
+}
+
+.nav_container {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+nav ul {
+    list-style-type: none;
+    font-size: 1.2rem;
+    margin-left: -1.5rem;
+    margin-right: 0rem;
+    margin-top: 0rem;
+    margin-bottom: 0rem;
+    padding: 0;
+    display: flex;
+}
+
+nav li {
+    margin: 0;
+    font-weight: 300;
+}
+
+nav a {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    color: #000000;
+    display: inline-block;
+    text-decoration: none;
+}
+
+.page_footer {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
