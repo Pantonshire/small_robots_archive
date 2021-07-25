@@ -17,6 +17,10 @@ h1 {
     font-size: 3rem;
 }
 
+h2 {
+    font-size: 1.5rem;
+}
+
 ul {
     list-style: square;
 }
@@ -26,17 +30,23 @@ li {
     margin-bottom: 0.4em;
 }
 
-a {
+a.link_text {
     font-weight: 500;
     transition: color 0.1s ease-out;
 }
 
-a, a:link, a:visited {
+a.link_text, a.link_text:link, a.link_text:visited {
     color: #7A3E76;
 }
 
-a:hover {
+a.link_text:hover {
     color: #C185BD;
+}
+
+a.link_area {
+    display: inline-block;
+    text-decoration: none;
+    color: inherit;
 }
 
 .content {
@@ -45,6 +55,11 @@ a:hover {
     margin-right: auto;
     padding-left: 1rem;
     padding-right: 1rem;
+}
+
+.section {
+    margin-top: 1em;
+    margin-bottom: 2em;
 }
 
 /*
@@ -118,7 +133,6 @@ nav a {
     padding-right: 1.5rem;
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
-    color: #000000;
     display: inline-block;
     text-decoration: none;
 }
@@ -126,4 +140,57 @@ nav a {
 .page_footer {
     padding-top: 0.25rem;
     padding-bottom: 0.25rem;
+}
+
+.robots_row {
+    display: flex;
+    flex-direction: row;
+    overflow-x: scroll;
+    white-space: nowrap;
+    scroll-snap-type: x mandatory;
+    margin-left: -1rem;
+    margin-right: 0rem;
+    margin-top: 0rem;
+    margin-bottom: 0rem;
+}
+
+ul.robots_row {
+    list-style-type: none;
+    padding: 0;
+}
+
+.robot_container {
+    scroll-snap-align: center;
+    margin-left: 1rem;
+    margin-right: 1rem;
+    text-align: center;
+}
+
+.robot_container img {
+    width: 128px;
+    height: 128px;
+    border-radius: 3px;
+    transition: all 0.2s ease-in-out;
+}
+
+.robot_container img:hover {
+    transform: scale(1.05);
+}
+
+@media (prefers-reduced-motion) {
+    .robot_container img:hover {
+        transform: none;
+    }
+}
+
+.robot_container h3 {
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+    font-weight: 400;
+    font-size: 1.2rem;
+}
+
+.robot_container .robot_number {
+    color: #b98eb7;
+    font-size: 1rem;
 }

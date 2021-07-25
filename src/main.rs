@@ -1,6 +1,7 @@
 mod clone_data;
 mod respond;
 mod templates;
+mod robots;
 
 use std::{env, error, fmt, io, borrow::Cow};
 
@@ -16,6 +17,7 @@ use maud::html;
 
 use clone_data::CloneData;
 use respond::{ResponseResult, MarkupResponse};
+use robots::{Named, RobotPreview};
 
 const DB_URL_VAR: &str = "DATABASE_URL";
 
@@ -63,15 +65,20 @@ impl From<env::VarError> for ServerError {
 
 #[get("/")]
 async fn landing_page(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse> {
-    let record = sqlx::query!("select robot_id from past_dailies order by posted_on desc limit 1")
-        .fetch_optional(&*pool)
-        .await
-        .map_err(actix_web::error::ErrorInternalServerError)?; //TODO: log error?
-
-    let daily_robot_text = match record {
-        None => Cow::Borrowed("No daily robot"),
-        Some(record) => Cow::Owned(format!("Daily robot id {}", record.robot_id)),
-    };
+    let latest = sqlx::query_as!(
+        RobotPreview,
+        "SELECT \
+            robot_groups.id AS group_id, robots.id AS robot_id, robots.robot_number, \
+            robots.ident, robots.prefix, robots.suffix, robots.plural, \
+            robot_groups.content_warning, robot_groups.image_thumb_path, robot_groups.alt, \
+            robot_groups.custom_alt
+        FROM robots INNER JOIN robot_groups ON robots.group_id = robot_groups.id \
+        ORDER BY robots.robot_number DESC \
+        LIMIT 10"
+    )
+    .fetch_all(&*pool)
+    .await
+    .map_err(actix_web::error::ErrorInternalServerError)?; //TODO: log error?
 
     Ok(templates::base(
         "Small Robots Archive",
@@ -96,11 +103,11 @@ async fn landing_page(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse>
             div class="nav_container content" {
                 nav {
                     ul {
-                        li { a href="/" { "Home" } }
-                        li { a href="/" { "All robots" } }
-                        li { a href="/" { "Robot of the day" } }
-                        li { a href="/" { "Random" } }
-                        li { a href="/" { "About" } }
+                        li { a class="link_text" href="/" { "Home" } }
+                        li { a class="link_text" href="/all" { "All robots" } }
+                        li { a class="link_text" href="/daily" { "Robot of the day" } }
+                        li { a class="link_text" href="/random" { "Random" } }
+                        li { a class="link_text" href="/about" { "About" } }
                     }
                 }
             }
@@ -108,28 +115,52 @@ async fn landing_page(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse>
 
         html! {
             div class="content" {
-                p {
-                    "Welcome to the Small Robots Archive, a fan-made site dedicated to all of the 
-                    mechanical friends drawn by the wonderful "
-                    a href="https://twitter.com/smolrobots" { "@smolrobots" }
-                    "."
+                div class="section" {
+                    p {
+                        "Welcome to the Small Robots Archive, a fan-made site dedicated to all of the 
+                        mechanical friends drawn by the wonderful "
+                        a class="link_text" href="https://twitter.com/smolrobots" { "@smolrobots" }
+                        "."
+                    }
+
+                    p {
+                        "If you'd like to support "
+                        a class="link_text" href="https://twitter.com/smolrobots" { "@smolrobots" }
+                        ", you can:"
+                    }
+
+                    ul {
+                        li { a class="link_text" href=(THH_BOOK_URL) { "Buy their book!" } }
+                        li { a class="link_text" href=(THH_REDBUBBLE_URL) { "Visit their Redbubble shop!" } }
+                        li { a class="link_text" href=(THH_PATREON_URL) { "Become a patron!" } }
+                        li { a class="link_text" href=(THH_COMMISION_URL) { "Commission your very own small robot!!!" } }
+                    }
                 }
 
-                p {
-                    "If you'd like to support "
-                    a href="https://twitter.com/smolrobots" { "@smolrobots" }
-                    ", you can:"
-                }
+                div class="section" {
+                    h2 { "Recent robots" }
+                    ul class="robots_row" {
+                        @for robot in &latest {
+                            li class="robot_container" {
+                                a href=(robot.page_link()) class="link_area" {
+                                    @if let Some(image_resource_url) = robot.image_resource_url() {
+                                        img
+                                            src=(image_resource_url)
+                                            alt=(robot.image_alt())
+                                            draggable="false";
+                                    } @else {
+                                        img alt="Image not found";
+                                    }
+                                    h3 { (robot.full_name()) }
+                                    h3 class="robot_number" { "#"(robot.robot_number) }
+                                }
+                            }
+                        }
+                    }
 
-                ul {
-                    li { a href=(THH_BOOK_URL) { "Buy their book!" } }
-                    li { a href=(THH_REDBUBBLE_URL) { "Visit their Redbubble shop!" } }
-                    li { a href=(THH_PATREON_URL) { "Become a patron!" } }
-                    li { a href=(THH_COMMISION_URL) { "Commission your very own small robot!!!" } }
-                }
-
-                p {
-                    (daily_robot_text)
+                    p {
+                        a class="link_text" href="/all" { "See all robots" }
+                    }
                 }
             }
         },
@@ -159,6 +190,7 @@ async fn main() -> Result<(), ServerError> {
         App::new()
             .app_data(CloneData::new(pool.clone()))
             .service(actix_files::Files::new("/static", "./static"))
+            .service(actix_files::Files::new("/robot_images", "./generated/robot_images"))
             .service(landing_page)
     };
 

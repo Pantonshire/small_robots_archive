@@ -10,3 +10,6 @@
 # IDE
 .vscode
 .idea
+
+# Generated content e.g. robot images
+/generated/

@@ -1,9 +1,12 @@
 <!DOCTYPE html>
+<html>
+
 <head>
     <meta charset="utf-8">
     <link rel="stylesheet" href="/static/style/main.css">
     <title>Small Robots Archive</title>
 </head>
+
 <body>
     <header>
         <div class="colour">
@@ -12,47 +15,128 @@
                     <h1>Small Robots Archive</h1>
                     <h2>Here are some drawings of helpful small robots for you</h2>
                 </div>
-                <div class="banner_image_container">
-                    <img class="banner_image" src="/static/banner_teabot.png" alt="Teabot, a little smiling robot mug of tea with caterpillar tracks">
-                </div>
+                <div class="banner_image_container"><img class="banner_image" src="/static/banner_teabot.png"
+                        alt="Teabot, a little smiling robot mug of tea with caterpillar tracks"></div>
             </div>
         </div>
-
         <div class="nav_container content">
             <nav>
                 <ul>
-                    <li><a href="/static/foo.txt">Home</a></li>
-                    <li><a href="/static/foo.txt">All robots</a></li>
-                    <li><a href="/static/foo.txt">Robot of the day</a></li>
-                    <li><a href="/static/foo.txt">Random</a></li>
-                    <li><a href="/static/foo.txt">About</a></li>
+                    <li><a class="link_text" href="/">Home</a></li>
+                    <li><a class="link_text" href="/all">All robots</a></li>
+                    <li><a class="link_text" href="/daily">Robot of the day</a></li>
+                    <li><a class="link_text" href="/random">Random</a></li>
+                    <li><a class="link_text" href="/about">About</a></li>
                 </ul>
             </nav>
         </div>
     </header>
-
     <main>
         <div class="content">
-            <p>
-                Welcome to the Small Robots Archive, a fan-made site dedicated to all of the mechanical
-                friends drawn by the wonderful <a href="https://twitter.com/smolrobots">@smolrobots</a>.
-            </p>
-            <p>
-                If you'd like to support <a href="https://twitter.com/smolrobots">@smolrobots</a>,
-                you can:
-            </p>
-            <ul>
-                <li><a href="https://www.hive.co.uk/Product/Thomas-Heasman-Hunt/Small-Robots--A-collection-of-one-hundred-mostly-useful-robot-friends/24078313">Buy their book!</a></li>
-                <li><a href="https://www.redbubble.com/people/smolrobots/shop">Visit their Redbubble shop!</a></li>
-                <li><a href="https://www.patreon.com/thomasheasmanhunt/posts">Become a patron!</a></li>
-                <li><a href="https://docs.google.com/forms/d/e/1FAIpQLSfQBDf0no0bVolIk90sgiMTHL9PpvVwDjGh6hOegCsPe4TXZg/viewform">Commission your very own small robot!!!</a></li>
-            </ul>
+            <div class="section">
+                <p>Welcome to the Small Robots Archive, a fan-made site dedicated to all of the
+                    mechanical friends drawn by the wonderful <a class="link_text"
+                        href="https://twitter.com/smolrobots">@smolrobots</a>.</p>
+                <p>If you'd like to support <a class="link_text" href="https://twitter.com/smolrobots">@smolrobots</a>,
+                    you can:</p>
+                <ul>
+                    <li><a class="link_text"
+                            href="https://www.hive.co.uk/Product/Thomas-Heasman-Hunt/Small-Robots--A-collection-of-one-hundred-mostly-useful-robot-friends/24078313">Buy
+                            their book!</a></li>
+                    <li><a class="link_text" href="https://www.redbubble.com/people/smolrobots/shop">Visit their
+                            Redbubble shop!</a></li>
+                    <li><a class="link_text" href="https://www.patreon.com/thomasheasmanhunt/posts">Become a patron!</a>
+                    </li>
+                    <li><a class="link_text"
+                            href="https://docs.google.com/forms/d/e/1FAIpQLSfQBDf0no0bVolIk90sgiMTHL9PpvVwDjGh6hOegCsPe4TXZg/viewform">Commission
+                            your very own small robot!!!</a></li>
+                </ul>
+            </div>
+            <div class="section">
+                <h2>Recent robots</h2>
+                <ul class="robots_row">
+                    <li class="robot_container"><a href="/robots/1462/your" class="link_area"><img
+                                src="/robot_images/thumb_1458.jpg"
+                                alt="An ovoid robot with banded arms and legs and a zigzag antenna. It's smiling happily and waving."
+                                draggable="false">
+                            <h3>Yourbot</h3>
+                            <h3 class="robot_number">#1463</h3>
+                        </a></li>
+                    <li class="robot_container"><a href="/robots/1463/mars" class="link_area"><img
+                                src="/robot_images/thumb_1460.jpg"
+                                alt="A spherical robot with banded arms and legs, strolling cheerfully across the surface of Mars: a barren, rocky, red-brown plain beneath a toffee-coloured sky. The robot is partially covered with smears of dust the same colour as the ground."
+                                draggable="false">
+                            <h3>Marsbot</h3>
+                            <h3 class="robot_number">#1462</h3>
+                        </a></li>
+                    <li class="robot_container"><a href="/robots/1464/skater" class="link_area"><img
+                                src="/robot_images/thumb_1462.jpg"
+                                alt="A robot in the form of a skateboard. It just has a smiling face at one end, on the top surface."
+                                draggable="false">
+                            <h3>Skaterbot</h3>
+                            <h3 class="robot_number">#1461</h3>
+                        </a></li>
+                    <li class="robot_container"><a href="/robots/1465/taketheknee" class="link_area"><img
+                                src="/robot_images/thumb_1465.jpg"
+                                alt="A spherical robot with jointed arms and legs and an antenna, taking the knee with a serious expression on its face."
+                                draggable="false">
+                            <h3>Takethekneebot</h3>
+                            <h3 class="robot_number">#1460</h3>
+                        </a></li>
+                    <li class="robot_container"><a href="/robots/1466/hotdog" class="link_area"><img
+                                src="/robot_images/thumb_1468.jpg"
+                                alt="A robot in the form of a traditional hot dog. It's in colour, with a reddish sausage which has the robots face on it and banded legs at the bottom, and a pale bun with banded arms sticking out. It has a zigzag of mustard up the middle of the sausage and its tongue is sticking out, tasting it."
+                                draggable="false">
+                            <h3>Hotdogbot</h3>
+                            <h3 class="robot_number">#1459</h3>
+                        </a></li>
+                    <li class="robot_container"><a href="/robots/1468/roo" class="link_area"><img
+                                src="/robot_images/thumb_1480.jpg"
+                                alt="A robot kangaroo, with a banded tail, a separate head with a triangular, flat nose and two large, ellipse-shaped ears, banded arms with little claws on the hands and a big spring with a single, rounded foot on its underside. On its belly is a little pouch with a smaller version of the robot peeking from the top, sticking out its tongue."
+                                draggable="false">
+                            <h3>Roobots</h3>
+                            <h3 class="robot_number">#1458</h3>
+                        </a></li>
+                    <li class="robot_container"><a href="/robots/1469/longship" class="link_area"><img
+                                src="/robot_images/thumb_1481.jpg"
+                                alt="A robot in the form of a viking longship. Its head is on the curled-over figurehead, it has a large striped sail billowing outwards, shields hung along its gunwales and in place of long oars it has banded arms, paddling it through the sea. It looks furious as it kicks up ocean spray in its wake."
+                                draggable="false">
+                            <h3>Longshipbot</h3>
+                            <h3 class="robot_number">#1457</h3>
+                        </a></li>
+                    <li class="robot_container"><a href="/robots/1470/bookend" class="link_area"><img
+                                src="/robot_images/thumb_1482.jpg"
+                                alt="A robot shaped like a fat cuboid on its side, sitting down with its banded legs out before it. It's resting against a couple of books with generic titles (&quot;Novel&quot; by Anne Author, &quot;Book&quot;), and looks a bit grumpy."
+                                draggable="false">
+                            <h3>Bookendbot</h3>
+                            <h3 class="robot_number">#1456</h3>
+                        </a></li>
+                    <li class="robot_container"><a href="/robots/1471/analogy" class="link_area"><img
+                                src="/robot_images/thumb_1483.jpg"
+                                alt="A round robot with banded arms and legs and a zigzag antenna, holding out a hand and angrily explaining something."
+                                draggable="false">
+                            <h3>Analogybot</h3>
+                            <h3 class="robot_number">#1455</h3>
+                        </a></li>
+                    <li class="robot_container"><a href="/robots/1467/cominghome" class="link_area"><img
+                                src="/robot_images/thumb_1479.jpg"
+                                alt="A spherical robot, patterned like an old-fashioned football, with banded arms and legs and an antenna with a bobble that looks like another little football. It's wearing football boots with studs and is buckled into a car seat, resting one hand on the door and looking with hopeful curiosity out of the window."
+                                draggable="false">
+                            <h3>Cominghomebot</h3>
+                            <h3 class="robot_number">#1454</h3>
+                        </a></li>
+                </ul>
+                <p><a class="link_text" href="/all">See all robots</a></p>
+            </div>
         </div>
     </main>
-
-    <footer class="colour">
-        <div class="content">
-            <p>Here is a footer</p>
+    <footer>
+        <div class="colour">
+            <div class="page_footer content">
+                <p>Here is a footer</p>
+            </div>
         </div>
     </footer>
 </body>
+
+</html>
