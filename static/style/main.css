@@ -30,7 +30,7 @@ li {
     margin-bottom: 0.4em;
 }
 
-a.link_text {
+a.link_text, a.link_text_light {
     font-weight: 500;
     transition: color 0.1s ease-out;
 }
@@ -39,8 +39,16 @@ a.link_text, a.link_text:link, a.link_text:visited {
     color: #7A3E76;
 }
 
+a.link_text_light, a.link_text_light:link, a.link_text_light:visited {
+    color: #FFFFFF;
+}
+
 a.link_text:hover {
     color: #C185BD;
+}
+
+a.link_text_light:hover {
+    color: #eedced;
 }
 
 a.link_area {
@@ -78,8 +86,8 @@ CFA0CC (small robots book)
 }
 
 .title_banner {
-    display: flex;
-    flex-direction: row;
+    /* display: flex;
+    flex-direction: row; */
     padding-top: 1rem;
     padding-bottom: 1rem;
 }
@@ -87,14 +95,14 @@ CFA0CC (small robots book)
 .title_banner h1 {
     margin-top: 0.25rem;
     margin-bottom: 0.25rem;
-    font-size: 3.5rem;
+    font-size: 3rem;
 }
 
 .title_banner h2 {
     margin-top: 0.25rem;
     margin-bottom: 0.25rem;
     font-weight: 300;
-    font-size: 2rem;
+    font-size: 1.75rem;
 }
 
 .banner_image_container {
@@ -138,6 +146,7 @@ nav a {
 }
 
 .page_footer {
+    margin-top: 1em;
     padding-top: 0.25rem;
     padding-bottom: 0.25rem;
 }
@@ -155,6 +164,20 @@ nav a {
 }
 
 ul.robots_row {
+    list-style-type: none;
+    padding: 0;
+}
+
+.robots_grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+    margin-left: -1rem;
+    margin-right: 0rem;
+    margin-top: 0rem;
+    margin-bottom: 0rem;
+}
+
+ul.robots_grid {
     list-style-type: none;
     padding: 0;
 }
