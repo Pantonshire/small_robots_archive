@@ -7,6 +7,7 @@ use std::env;
 use std::error;
 use std::fmt;
 use std::io;
+use std::borrow::Cow;
 
 use actix_web::{
     get,
@@ -23,6 +24,9 @@ use clone_data::CloneData;
 use respond::{ResponseResult, MarkupResponse};
 use robots::{Named, RobotPreview};
 
+const DEFAULT_BIND_ADDR: &str = "[::1]:8080";
+
+const BIND_ADDR_VAR: &str = "BIND_ADDRESS";
 const DB_URL_VAR: &str = "DATABASE_URL";
 
 const THH_BOOK_URL: &str = "https://www.hive.co.uk/Product/Thomas-Heasman-Hunt/Small-Robots--A-collection-of-one-hundred-mostly-useful-robot-friends/24078313";
@@ -318,8 +322,21 @@ async fn main() -> Result<(), ServerError> {
             .service(about_page)
     };
 
-    HttpServer::new(app_factory)
-        .bind("[::1]:7777")?
+    let http_server = HttpServer::new(app_factory);
+
+    let http_server = match env::var(BIND_ADDR_VAR) {
+        Ok(addrs) => {
+            let mut http_server = http_server;
+            for addr in addrs.split_whitespace() {
+                http_server = http_server.bind(addr)?;
+            }
+            http_server
+        },
+        Err(env::VarError::NotPresent) => http_server.bind(DEFAULT_BIND_ADDR)?,
+        Err(err) => return Err(err.into()),
+    };
+
+    http_server
         .run()
         .await
         .map_err(ServerError::from)
