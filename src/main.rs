@@ -7,7 +7,6 @@ use std::env;
 use std::error;
 use std::fmt;
 use std::io;
-use std::borrow::Cow;
 
 use actix_web::{
     get,
@@ -22,7 +21,7 @@ use maud::{html, PreEscaped};
 
 use clone_data::CloneData;
 use respond::{ResponseResult, MarkupResponse};
-use robots::{Named, RobotPreview};
+use robots::{Named, Displayable, RobotPreview, RobotFull};
 
 const DEFAULT_BIND_ADDR: &str = "[::1]:8080";
 
@@ -142,6 +141,7 @@ async fn landing_page(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse>
     ).into())
 }
 
+//TODO: render content warnings
 async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResponse> {
     const PAGE_SIZE: u32 = 48;
 
@@ -194,7 +194,7 @@ async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResp
             @if let Some(prev_page) = prev_page {
                 p { a class="link_text" href=(prev_page) { "Previous" } }
             } @else {
-                p { "Previous" }
+                p class="disabled" { "Previous" }
             }
 
             p { "Page " (page) " of " (num_pages) }
@@ -202,7 +202,7 @@ async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResp
             @if let Some(next_page) = next_page {
                 p { a class="link_text" href=(next_page) { "Next" } }
             } @else {
-                p { "Next" }
+                p class="disabled" { "Next" }
             }
         }
     };
@@ -212,7 +212,6 @@ async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResp
         html! {
             div class="section" {
                 h2 { "All robots" }
-                (page_control)
                 ul class="robots_grid" {
                     @for robot in &robots {
                         li class="robot_container" {
@@ -231,6 +230,9 @@ async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResp
                         }
                     }
                 }
+            }
+
+            div class="section" {
                 (page_control)
             }
         }
@@ -245,6 +247,62 @@ async fn all_robots(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse> {
 #[get("/all/{page}")]
 async fn all_robots_paged(pool: CloneData<PgPool>, page: web::Path<u32>) -> ResponseResult<MarkupResponse> {
     render_all_robots(pool.inner, page.into_inner()).await
+}
+
+#[get("/robots/{number}/{ident}")]
+async fn robot_page(pool: CloneData<PgPool>, path: web::Path<(i32, String)>) -> ResponseResult<MarkupResponse> {
+    let (number, ident) = path.into_inner();
+
+    //TODO: 404 not found response
+    let robot = sqlx::query_as!(
+        RobotFull,
+        "SELECT \
+            robot_groups.id AS group_id, robots.id AS robot_id, robots.robot_number, robots.prefix, \
+            robots.suffix, robots.plural, robot_groups.content_warning, robot_groups.image_path, \
+            robot_groups.alt, robot_groups.custom_alt, robot_groups.body, robot_groups.tweet_id \
+        FROM robots INNER JOIN robot_groups ON robots.group_id = robot_groups.id \
+        WHERE (robots.robot_number, robots.ident) = ($1, $2)",
+        number,
+        ident
+    )
+    .fetch_one(&*pool)
+    .await
+    .map_err(actix_web::error::ErrorInternalServerError)?;
+
+    let full_name = robot.full_name();
+
+    let tweet_link = format!("https://twitter.com/smolrobots/status/{}", robot.tweet_id);
+
+    Ok(templates::archive_page(
+        &full_name,
+        html! {
+            div class="section" {
+                @if let Some(content_warning) = robot.content_warning.as_deref() {
+                    // details open {
+                    //     summary { "Content warning" }
+                    //     (content_warning)
+                    // }
+                    p { "Content warning: " (content_warning) }
+                }
+
+                h2 { span class="robot_number" { "#" (robot.robot_number) } " " (full_name) }
+
+                @if let Some(image_resource_url) = robot.image_resource_url() {
+                    img
+                        src=(image_resource_url)
+                        alt=(robot.image_alt());
+                }
+
+                p {
+                    (robot.body)
+                }
+
+                p {
+                    a class="link_text" href=(tweet_link) { "Go to original Tweet" }
+                }
+            }
+        }
+    ).into())
 }
 
 #[get("/about")]
@@ -319,6 +377,7 @@ async fn main() -> Result<(), ServerError> {
             .service(landing_page)
             .service(all_robots)
             .service(all_robots_paged)
+            .service(robot_page)
             .service(about_page)
     };
 

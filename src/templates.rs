@@ -41,7 +41,7 @@ pub(crate) fn header() -> Markup {
         }
 
         div class="nav_container content" {
-            nav {
+            nav class="site_nav" {
                 ul {
                     li { a class="link_text" href="/" { "Home" } }
                     li { a class="link_text" href="/all" { "All robots" } }

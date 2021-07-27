@@ -120,7 +120,7 @@ CFA0CC (small robots book)
     padding-bottom: 1rem;
 }
 
-nav ul {
+.site_nav ul {
     list-style-type: none;
     font-size: 1.2rem;
     margin-left: -1.5rem;
@@ -131,12 +131,12 @@ nav ul {
     display: flex;
 }
 
-nav li {
+.site_nav li {
     margin: 0;
     font-weight: 300;
 }
 
-nav a {
+.site_nav a {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
     padding-top: 0.5rem;
@@ -146,9 +146,30 @@ nav a {
 }
 
 .page_footer {
-    margin-top: 1em;
     padding-top: 0.25rem;
     padding-bottom: 0.25rem;
+}
+
+.page_control {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.page_control p {
+    margin: 0;
+}
+
+.disabled {
+    color: #bebebe;
+    cursor: default;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .robots_row {
@@ -214,6 +235,9 @@ ul.robots_grid {
 }
 
 .robot_container .robot_number {
-    color: #b98eb7;
     font-size: 1rem;
+}
+
+.robot_number {
+    color: #b98eb7;
 }
