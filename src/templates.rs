@@ -49,6 +49,15 @@ pub(crate) fn header() -> Markup {
                     li { a class="link_text" href="/random" { "Random" } }
                     li { a class="link_text" href="/about" { "About" } }
                 }
+
+                //TODO: submit button
+                form class="search_bar_container" method="get" action="/search" {
+                    input
+                        class="search_bar"
+                        name="query"
+                        type="text"
+                        placeholder="Search...";
+                }
             }
         }
     }

@@ -120,6 +120,21 @@ CFA0CC (small robots book)
     padding-bottom: 1rem;
 }
 
+.site_nav {
+    display: flex;
+    justify-content: space-between;
+}
+
+.search_bar {
+    height: 100%;
+    font-size: 1rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    box-sizing: border-box;
+    border: 2px solid #C185BD;
+    border-radius: 3px;
+}
+
 .site_nav ul {
     list-style-type: none;
     font-size: 1.2rem;
@@ -263,6 +278,7 @@ ul.robots_grid {
 
 .robot_image_full {
     width: 100%;
+    box-sizing: border-box;
     border: 3px solid #C185BD;
-    border-radius: 4px;
+    border-radius: 3px;
 }
