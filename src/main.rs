@@ -330,9 +330,7 @@ async fn about_page() -> MarkupResponse {
                 p {
                     "If you find something wrong with this site, please "
                     a class="link_text" href="https://github.com/Pantonshire/small_robots_archive/issues/new" { "open an issue" }
-                    " on Github or "
-                    a class="link_text" href="#contact" { "contact me directly" }
-                    "."
+                    " on Github."
                 }
             }
             div class="section" {
