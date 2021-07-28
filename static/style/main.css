@@ -241,3 +241,28 @@ ul.robots_grid {
 .robot_number {
     color: #b98eb7;
 }
+
+.robot_title {
+    margin-bottom: 2rem;
+}
+
+.robot_content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "image description";
+}
+
+.robot_description {
+    margin-left: 3rem;
+    grid-area: description;
+}
+
+.robot_image_full_container {
+    grid-area: image
+}
+
+.robot_image_full {
+    width: 100%;
+    border: 3px solid #C185BD;
+    border-radius: 4px;
+}
