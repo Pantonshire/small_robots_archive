@@ -1,6 +1,8 @@
 mod clone_data;
 mod respond;
 mod templates;
+mod pages;
+mod services;
 mod robots;
 
 use std::env;
@@ -28,10 +30,14 @@ const DEFAULT_BIND_ADDR: &str = "[::1]:8080";
 const BIND_ADDR_VAR: &str = "BIND_ADDRESS";
 const DB_URL_VAR: &str = "DATABASE_URL";
 
-const THH_BOOK_URL: &str = "https://www.hive.co.uk/Product/Thomas-Heasman-Hunt/Small-Robots--A-collection-of-one-hundred-mostly-useful-robot-friends/24078313";
-const THH_REDBUBBLE_URL: &str = "https://www.redbubble.com/people/smolrobots/shop";
-const THH_PATREON_URL: &str = "https://www.patreon.com/thomasheasmanhunt/posts";
-const THH_COMMISION_URL: &str = "https://docs.google.com/forms/d/e/1FAIpQLSfQBDf0no0bVolIk90sgiMTHL9PpvVwDjGh6hOegCsPe4TXZg/viewform";
+const THH_BOOK_URL: &str
+    = "https://www.hive.co.uk/Product/Thomas-Heasman-Hunt/Small-Robots--A-collection-of-one-hundred-mostly-useful-robot-friends/24078313";
+const THH_REDBUBBLE_URL: &str
+    = "https://www.redbubble.com/people/smolrobots/shop";
+const THH_PATREON_URL: &str
+    = "https://www.patreon.com/thomasheasmanhunt/posts";
+const THH_COMMISION_URL: &str
+    = "https://docs.google.com/forms/d/e/1FAIpQLSfQBDf0no0bVolIk90sgiMTHL9PpvVwDjGh6hOegCsPe4TXZg/viewform";
 
 #[derive(Debug)]
 enum ServerError {
@@ -72,8 +78,7 @@ impl From<env::VarError> for ServerError {
 
 #[get("/")]
 async fn landing_page(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse> {
-    let latest = sqlx::query_as!(
-        RobotPreview,
+    let latest: Vec<RobotPreview> = sqlx::query_as(
         "SELECT \
             robot_groups.id AS group_id, robots.id AS robot_id, robots.robot_number, \
             robots.ident, robots.prefix, robots.suffix, robots.plural, \
@@ -150,17 +155,18 @@ async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResp
         page => page,
     };
 
-    let num_robots = sqlx::query!("SELECT COUNT(*) AS count FROM robots")
+    let num_robots = sqlx::query_as::<_, robots::Count>("SELECT COUNT(*) AS count FROM robots")
         .fetch_one(&pool)
         .await
         .map_err(actix_web::error::ErrorInternalServerError)?
-        .count
-        .unwrap_or(0);
+        .count;
 
     let num_pages = ((num_robots - 1) / (PAGE_SIZE as i64)) + 1;
 
-    let robots = sqlx::query_as!(
-        RobotPreview,
+    let limit = PAGE_SIZE as i64;
+    let offset = (PAGE_SIZE * (page - 1)) as i64;
+
+    let robots: Vec<RobotPreview> = sqlx::query_as(
         "SELECT \
             robot_groups.id AS group_id, robots.id AS robot_id, robots.robot_number, \
             robots.ident, robots.prefix, robots.suffix, robots.plural, \
@@ -169,10 +175,10 @@ async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResp
         FROM robots INNER JOIN robot_groups ON robots.group_id = robot_groups.id \
         ORDER BY robots.robot_number \
         LIMIT $1 \
-        OFFSET $2",
-        PAGE_SIZE as i64,
-        (PAGE_SIZE * (page - 1)) as i64
+        OFFSET $2"
     )
+    .bind(limit)
+    .bind(offset)
     .fetch_all(&pool)
     .await
     .map_err(actix_web::error::ErrorInternalServerError)?;
@@ -290,7 +296,7 @@ fn render_robot(robot: RobotFull) -> MarkupResponse {
                             a class="link_text" href=(tweet_link) { "Go to original Tweet" }
                         }
                     }
-            }
+                }
             }
         }
     ).into()
@@ -301,17 +307,16 @@ async fn robot_page(pool: CloneData<PgPool>, path: web::Path<(i32, String)>) -> 
     let (number, ident) = path.into_inner();
 
     //TODO: 404 not found response
-    let robot = sqlx::query_as!(
-        RobotFull,
+    let robot: RobotFull = sqlx::query_as(
         "SELECT \
             robot_groups.id AS group_id, robots.id AS robot_id, robots.robot_number, robots.prefix, \
             robots.suffix, robots.plural, robot_groups.content_warning, robot_groups.image_path, \
             robot_groups.alt, robot_groups.custom_alt, robot_groups.body, robot_groups.tweet_id \
         FROM robots INNER JOIN robot_groups ON robots.group_id = robot_groups.id \
-        WHERE (robots.robot_number, robots.ident) = ($1, $2)",
-        number,
-        ident
+        WHERE (robots.robot_number, robots.ident) = ($1, $2)"
     )
+    .bind(number)
+    .bind(&ident)
     .fetch_one(&*pool)
     .await
     .map_err(actix_web::error::ErrorInternalServerError)?;
@@ -321,8 +326,7 @@ async fn robot_page(pool: CloneData<PgPool>, path: web::Path<(i32, String)>) -> 
 
 #[get("/daily")]
 async fn daily_robot(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse> {
-    let robot = sqlx::query_as!(
-        RobotFull,
+    let robot: RobotFull = sqlx::query_as(
         "SELECT \
             robot_groups.id AS group_id, robots.id AS robot_id, robots.robot_number, robots.prefix, \
             robots.suffix, robots.plural, robot_groups.content_warning, robot_groups.image_path, \
@@ -330,6 +334,24 @@ async fn daily_robot(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse> 
         FROM robots INNER JOIN robot_groups ON robots.group_id = robot_groups.id \
         WHERE robots.id IN (SELECT robot_id FROM past_dailies ORDER BY posted_on DESC LIMIT 1) \
         LIMIT 1",
+    )
+    .fetch_one(&*pool)
+    .await
+    .map_err(actix_web::error::ErrorInternalServerError)?;
+
+    Ok(render_robot(robot))
+}
+
+#[get("/random")]
+async fn random_robot(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse> {
+    let robot: RobotFull = sqlx::query_as(
+        "SELECT \
+            robot_groups.id AS group_id, robots.id AS robot_id, robots.robot_number, robots.prefix, \
+            robots.suffix, robots.plural, robot_groups.content_warning, robot_groups.image_path, \
+            robot_groups.alt, robot_groups.custom_alt, robot_groups.body, robot_groups.tweet_id \
+        FROM robots INNER JOIN robot_groups ON robots.group_id = robot_groups.id \
+        LIMIT 1 \
+        OFFSET FLOOR(RANDOM() * (SELECT COUNT (*) FROM robots))",
     )
     .fetch_one(&*pool)
     .await
@@ -412,6 +434,7 @@ async fn main() -> Result<(), ServerError> {
             .service(all_robots_paged)
             .service(robot_page)
             .service(daily_robot)
+            .service(random_robot)
             .service(about_page)
     };
 

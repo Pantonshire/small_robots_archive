@@ -1,15 +1,9 @@
 use actix_web::{Responder, HttpRequest, HttpResponse};
 use maud::Markup;
 
-pub type ResponseResult<T> = Result<T, actix_web::Error>;
+pub(crate) type ResponseResult<T> = Result<T, actix_web::Error>;
 
-pub struct MarkupResponse(pub(crate) Markup);
-
-impl MarkupResponse {
-    pub fn new(markup: Markup) -> Self {
-        Self(markup)
-    }
-}
+pub(crate) struct MarkupResponse(pub(crate) Markup);
 
 impl From<Markup> for MarkupResponse {
     fn from(markup: Markup) -> Self {

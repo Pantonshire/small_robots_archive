@@ -1,3 +1,5 @@
+use sqlx::FromRow;
+
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct RobotName<'a> {
     pub(crate) prefix: &'a str,
@@ -74,7 +76,7 @@ pub(crate) trait Displayable {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(FromRow, Clone, Debug)]
 pub(crate) struct RobotPreview {
     pub(crate) group_id: i32,
     pub(crate) robot_id: i32,
@@ -115,6 +117,7 @@ impl Displayable for RobotPreview {
     }
 }
 
+#[derive(FromRow, Clone, Debug)]
 pub(crate) struct RobotFull {
     pub(crate) group_id: i32,
     pub(crate) robot_id: i32,
@@ -148,4 +151,9 @@ impl Displayable for RobotFull {
             custom_alt: self.custom_alt.as_deref(),
         }
     }
+}
+
+#[derive(FromRow, Copy, Clone, Debug)]
+pub(crate) struct Count {
+    pub(crate) count: i64,
 }
