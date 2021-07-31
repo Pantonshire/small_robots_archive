@@ -157,3 +157,9 @@ impl Displayable for RobotFull {
 pub(crate) struct Count {
     pub(crate) count: i64,
 }
+
+impl Count {
+    pub(crate) fn pages(self, page_size: u32) -> u32 {
+        (((self.count.max(0) - 1) / (page_size as i64)) + 1) as u32
+    }
+}

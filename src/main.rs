@@ -9,6 +9,7 @@ use std::env;
 use std::error;
 use std::fmt;
 use std::io;
+use std::ops::Add;
 
 use actix_web::{
     get,
@@ -150,21 +151,15 @@ async fn landing_page(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse>
 async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResponse> {
     const PAGE_SIZE: u32 = 48;
 
-    let page = match page {
-        page if page < 1 => return Err(actix_web::error::ErrorNotFound("invalid page number")),
-        page => page,
-    };
-
-    let num_robots = sqlx::query_as::<_, robots::Count>("SELECT COUNT(*) AS count FROM robots")
+    let num_robots: robots::Count = sqlx::query_as("SELECT COUNT(*) AS count FROM robots")
         .fetch_one(&pool)
         .await
-        .map_err(actix_web::error::ErrorInternalServerError)?
-        .count;
+        .map_err(actix_web::error::ErrorInternalServerError)?;
 
-    let num_pages = ((num_robots - 1) / (PAGE_SIZE as i64)) + 1;
+    let num_pages = num_robots.pages(PAGE_SIZE);
 
     let limit = PAGE_SIZE as i64;
-    let offset = (PAGE_SIZE * (page - 1)) as i64;
+    let offset = (PAGE_SIZE * page) as i64;
 
     let robots: Vec<RobotPreview> = sqlx::query_as(
         "SELECT \
@@ -183,35 +178,65 @@ async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResp
     .await
     .map_err(actix_web::error::ErrorInternalServerError)?;
 
-    let prev_page = if page > 1 {
-        Some(format!("/all/{}", page - 1))
-    } else {
-        None
-    };
+    let pagination = Pagination::try_new(page, num_pages);
 
-    let next_page = if (page as i64) < num_pages {
-        Some(format!("/all/{}", page + 1))
-    } else {
-        None
-    };
+    let pagination_menu = pagination.map(|pagination| html! {
+        nav class="pagination" {
+            ul {
+                li class="pagination_item_major" {
+                    @if let Some(prev_page) = pagination.prev_page {
+                        a class="pagination_number_other" href=(format!("/all/{}", prev_page)) { "Previous" }
+                    } @else {
+                        span class="pagination_disabled no_select" { "Previous" }
+                    }
+                }
 
-    let page_control = html! {
-        nav class="page_control" {
-            @if let Some(prev_page) = prev_page {
-                p { a class="link_text" href=(prev_page) { "Previous" } }
-            } @else {
-                p class="disabled" { "Previous" }
-            }
+                @if let Some(first_page) = pagination.first_page {
+                    li class="pagination_item_minor" {
+                        a class="pagination_number_other" href=(format!("/all/{}", first_page.add(1))) { (first_page.add(1)) }
+                    }
 
-            p { "Page " (page) " of " (num_pages) }
-            
-            @if let Some(next_page) = next_page {
-                p { a class="link_text" href=(next_page) { "Next" } }
-            } @else {
-                p class="disabled" { "Next" }
+                    li class="pagination_item_minor" {
+                        span class="pagination_elipsis no_select" { (PreEscaped("&hellip;")) }
+                    }
+                }
+
+                @for n in pagination.min_range_page .. pagination.current_page {
+                    li class="pagination_item_minor" {
+                        a class="pagination_number_other" href=(format!("/all/{}", n.add(1))) { (n.add(1)) }
+                    }
+                }
+
+                li class="pagination_item_minor" {
+                    span class="pagination_number_current no_select" { (pagination.current_page.add(1)) }
+                }
+
+                @for n in (pagination.current_page ..= pagination.max_range_page).skip(1) {
+                    li class="pagination_item_minor" {
+                        a class="pagination_number_other" href=(format!("/all/{}", n.add(1))) { (n.add(1)) }
+                    }
+                }
+
+                @if let Some(last_page) = pagination.last_page {
+                    li class="pagination_item_minor" {
+                        span class="pagination_elipsis no_select" { (PreEscaped("&hellip;")) }
+                    }
+
+                    li class="pagination_item_minor" {
+                        a class="pagination_number_other" href=(format!("/all/{}", last_page.add(1))) { (last_page.add(1)) }
+                    }
+                }
+
+                li class="pagination_item_major" {
+                    @if let Some(next_page) = pagination.next_page {
+                        a class="pagination_number_other" href=(format!("/all/{}", next_page.add(1))) { "Next" }
+                    }  @else {
+                        span class="pagination_disabled no_select" { "Next" }
+                    }
+                }
             }
         }
-    };
+    });
 
     Ok(templates::archive_page(
         "All robots",
@@ -238,8 +263,10 @@ async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResp
                 }
             }
 
-            div class="section" {
-                (page_control)
+            @if let Some(pagination_menu) = pagination_menu {
+                div class="section" {
+                    (pagination_menu)
+                }
             }
         }
     ).into())
@@ -247,12 +274,17 @@ async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResp
 
 #[get("/all")]
 async fn all_robots(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse> {
-    render_all_robots(pool.inner, 1).await
+    render_all_robots(pool.inner, 0).await
 }
 
 #[get("/all/{page}")]
 async fn all_robots_paged(pool: CloneData<PgPool>, page: web::Path<u32>) -> ResponseResult<MarkupResponse> {
-    render_all_robots(pool.inner, page.into_inner()).await
+    let page = page
+        .into_inner()
+        .checked_sub(1)
+        .ok_or_else(|| actix_web::error::ErrorNotFound("invalid page number"))?;
+
+    render_all_robots(pool.inner, page).await
 }
 
 fn render_robot(robot: RobotFull) -> MarkupResponse {
@@ -411,6 +443,68 @@ async fn about_page() -> MarkupResponse {
             }
         }
     ).into()
+}
+
+#[derive(Clone, Debug)]
+struct Pagination {
+    current_page: u32,
+    min_range_page: u32,
+    max_range_page: u32,
+    first_page: Option<u32>,
+    last_page: Option<u32>,
+    prev_page: Option<u32>,
+    next_page: Option<u32>,
+}
+
+impl Pagination {
+    /// Pages are zero-indexed
+    fn try_new(current_page: u32, num_pages: u32) -> Option<Self> {
+        const TOTAL_SPACES: u32 = 9;
+        const ADJACENT_SPACES: u32 = TOTAL_SPACES / 2;
+
+        if num_pages <= current_page {
+            return None;
+        }
+
+        let last_page = num_pages - 1;
+        let prev_page = (current_page > 0).then(|| current_page - 1);
+        let next_page = (current_page < last_page).then(|| current_page + 1);
+
+        if num_pages <= TOTAL_SPACES {
+            return Some(Pagination {
+                current_page,
+                min_range_page: 0,
+                max_range_page: last_page,
+                first_page: None,
+                last_page: None,
+                prev_page,
+                next_page,
+            });
+        }
+
+        let centre = current_page
+            .clamp(ADJACENT_SPACES, last_page - ADJACENT_SPACES);
+
+        let (min_range_page, first_page) = match centre - ADJACENT_SPACES {
+            min if min > 0 => (min + 1, Some(0)),
+            min => (min, None),
+        };
+
+        let (max_range_page, last_page) = match centre + ADJACENT_SPACES {
+            max if max < last_page => (max - 1, Some(last_page)),
+            max => (max, None),
+        };
+    
+        Some(Pagination {
+            current_page,
+            min_range_page,
+            max_range_page,
+            first_page,
+            last_page,
+            prev_page,
+            next_page,
+        })
+    }
 }
 
 #[actix_web::main]

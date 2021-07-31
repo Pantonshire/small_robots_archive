@@ -165,19 +165,65 @@ CFA0CC (small robots book)
     padding-bottom: 0.25rem;
 }
 
-.page_control {
+.pagination {
+    margin-top: 3rem;
+    margin-bottom: 3rem;
+}
+
+.pagination ul {
+    list-style-type: none;
+    padding: 0;
     display: flex;
-    justify-content: space-between;
-    margin-top: 1rem;
-    margin-bottom: 1rem;
+    justify-content: center;
 }
 
-.page_control p {
-    margin: 0;
+.pagination_item_major {
+    margin-left: 1rem;
+    margin-right: 1rem;
 }
 
-.disabled {
-    color: #bebebe;
+.pagination_item_minor {
+    margin-left: 0.25rem;
+    margin-right: 0.25rem;
+}
+
+.pagination_number_current, .pagination_number_other, .pagination_elipsis, .pagination_disabled {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.pagination_number_current, .pagination_elipsis, .pagination_number_other {
+    font-weight: 400;
+}
+
+.pagination_number_current {
+    background-color: #7A3E76;
+    border: 2px solid #7A3E76;
+    border-radius: 2px;
+    color: white;
+}
+
+.pagination_number_other {
+    text-decoration: none;
+    color: #7A3E76;
+    border: 2px solid #C185BD;
+    border-radius: 2px;
+    transition: border-color 0.1s ease-out;
+}
+
+.pagination_number_other:hover {
+    border-color: #7A3E76;
+}
+
+.pagination_disabled {
+    color: #BEBEBE;
+    border: 2px solid #D8D8D8;
+    border-radius: 2px;
+}
+
+.no_select {
     cursor: default;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -206,7 +252,7 @@ ul.robots_row {
 
 .robots_grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: repeat(6, 1fr);
     margin-left: -1rem;
     margin-right: 0rem;
     margin-top: 0rem;
