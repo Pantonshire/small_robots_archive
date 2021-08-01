@@ -185,7 +185,7 @@ async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResp
             ul {
                 li class="pagination_item_major" {
                     @if let Some(prev_page) = pagination.prev_page {
-                        a class="pagination_number_other" href=(format!("/all/{}", prev_page)) { "Previous" }
+                        a class="pagination_number_other" href=(format!("/all/{}", prev_page.add(1))) { "Previous" }
                     } @else {
                         span class="pagination_disabled no_select" { "Previous" }
                     }
