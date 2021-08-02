@@ -1,6 +1,18 @@
 use sqlx::FromRow;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Copy, Clone, Debug)]
+pub(crate) struct RobotKey<'a> {
+    pub(crate) robot_number: i32,
+    pub(crate) ident: &'a str,
+}
+
+impl<'a> RobotKey<'a> {
+    pub(crate) fn page_link(&self) -> String {
+        format!("/robots/{}/{}", self.robot_number, self.ident)
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
 pub(crate) struct RobotName<'a> {
     pub(crate) prefix: &'a str,
     pub(crate) suffix: &'a str,
@@ -25,7 +37,7 @@ impl<'a> RobotName<'a> {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub(crate) struct RobotImage<'a> {
     pub(crate) file_name: Option<&'a str>,
     pub(crate) orig_alt: Option<&'a str>,
@@ -56,6 +68,14 @@ impl<'a> RobotImage<'a> {
     }
 }
 
+pub(crate) trait Linkable {
+    fn key(&self) -> RobotKey<'_>;
+
+    fn page_link(&self) -> String {
+        self.key().page_link()
+    }
+}
+
 pub(crate) trait Named {
     fn name(&self) -> RobotName<'_>;
 
@@ -77,6 +97,37 @@ pub(crate) trait Displayable {
 }
 
 #[derive(FromRow, Clone, Debug)]
+pub(crate) struct RobotTextLink {
+    pub(crate) group_id: i32,
+    pub(crate) robot_id: i32,
+    pub(crate) robot_number: i32,
+    pub(crate) ident: String,
+    pub(crate) prefix: String,
+    pub(crate) suffix: String,
+    pub(crate) plural: Option<String>,
+    pub(crate) content_warning: Option<String>,
+}
+
+impl Linkable for RobotTextLink {
+    fn key(&self) -> RobotKey<'_> {
+        RobotKey {
+            robot_number: self.robot_number,
+            ident: &self.ident,
+        }
+    }
+}
+
+impl Named for RobotTextLink {
+    fn name(&self) -> RobotName<'_> {
+        RobotName {
+            prefix: &self.prefix,
+            suffix: &self.suffix,
+            plural: self.plural.as_deref(),
+        }
+    }
+}
+
+#[derive(FromRow, Clone, Debug)]
 pub(crate) struct RobotPreview {
     pub(crate) group_id: i32,
     pub(crate) robot_id: i32,
@@ -91,9 +142,12 @@ pub(crate) struct RobotPreview {
     pub(crate) custom_alt: Option<String>,
 }
 
-impl RobotPreview {
-    pub(crate) fn page_link(&self) -> String {
-        format!("/robots/{}/{}", self.robot_number, self.ident)
+impl Linkable for RobotPreview {
+    fn key(&self) -> RobotKey<'_> {
+        RobotKey {
+            robot_number: self.robot_number,
+            ident: &self.ident,
+        }
     }
 }
 
@@ -122,6 +176,7 @@ pub(crate) struct RobotFull {
     pub(crate) group_id: i32,
     pub(crate) robot_id: i32,
     pub(crate) robot_number: i32,
+    pub(crate) ident: String,
     pub(crate) prefix: String,
     pub(crate) suffix: String,
     pub(crate) plural: Option<String>,
@@ -131,6 +186,15 @@ pub(crate) struct RobotFull {
     pub(crate) custom_alt: Option<String>,
     pub(crate) body: String,
     pub(crate) tweet_id: i64,
+}
+
+impl Linkable for RobotFull {
+    fn key(&self) -> RobotKey<'_> {
+        RobotKey {
+            robot_number: self.robot_number,
+            ident: &self.ident,
+        }
+    }
 }
 
 impl Named for RobotFull {

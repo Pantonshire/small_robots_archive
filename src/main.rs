@@ -11,20 +11,13 @@ use std::fmt;
 use std::io;
 use std::ops::Add;
 
-use actix_web::{
-    get,
-    HttpResponse,
-    Responder,
-    HttpServer,
-    App,
-    web
-};
+use actix_web::{get, HttpServer, App, web};
 use sqlx::postgres::PgPool;
 use maud::{html, PreEscaped};
 
 use clone_data::CloneData;
 use respond::{ResponseResult, MarkupResponse};
-use robots::{Named, Displayable, RobotPreview, RobotFull};
+use robots::{Linkable, Named, Displayable, RobotPreview, RobotFull};
 
 const DEFAULT_BIND_ADDR: &str = "[::1]:8080";
 
@@ -86,7 +79,7 @@ async fn landing_page(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse>
             robot_groups.content_warning, robot_groups.image_thumb_path, robot_groups.alt, \
             robot_groups.custom_alt \
         FROM robots INNER JOIN robot_groups ON robots.group_id = robot_groups.id \
-        ORDER BY robots.robot_number DESC \
+        ORDER BY robots.robot_number DESC, robots.id DESC \
         LIMIT 10"
     )
     .fetch_all(&*pool)
@@ -168,7 +161,7 @@ async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResp
             robot_groups.content_warning, robot_groups.image_thumb_path, robot_groups.alt, \
             robot_groups.custom_alt \
         FROM robots INNER JOIN robot_groups ON robots.group_id = robot_groups.id \
-        ORDER BY robots.robot_number \
+        ORDER BY robots.robot_number, robots.id \
         LIMIT $1 \
         OFFSET $2"
     )
@@ -341,9 +334,10 @@ async fn robot_page(pool: CloneData<PgPool>, path: web::Path<(i32, String)>) -> 
     //TODO: 404 not found response
     let robot: RobotFull = sqlx::query_as(
         "SELECT \
-            robot_groups.id AS group_id, robots.id AS robot_id, robots.robot_number, robots.prefix, \
-            robots.suffix, robots.plural, robot_groups.content_warning, robot_groups.image_path, \
-            robot_groups.alt, robot_groups.custom_alt, robot_groups.body, robot_groups.tweet_id \
+            robot_groups.id AS group_id, robots.id AS robot_id, robots.robot_number, robots.ident, \
+            robots.prefix, robots.suffix, robots.plural, robot_groups.content_warning, \
+            robot_groups.image_path, robot_groups.alt, robot_groups.custom_alt, robot_groups.body, \
+            robot_groups.tweet_id \
         FROM robots INNER JOIN robot_groups ON robots.group_id = robot_groups.id \
         WHERE (robots.robot_number, robots.ident) = ($1, $2)"
     )
@@ -360,9 +354,10 @@ async fn robot_page(pool: CloneData<PgPool>, path: web::Path<(i32, String)>) -> 
 async fn daily_robot(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse> {
     let robot: RobotFull = sqlx::query_as(
         "SELECT \
-            robot_groups.id AS group_id, robots.id AS robot_id, robots.robot_number, robots.prefix, \
-            robots.suffix, robots.plural, robot_groups.content_warning, robot_groups.image_path, \
-            robot_groups.alt, robot_groups.custom_alt, robot_groups.body, robot_groups.tweet_id \
+            robot_groups.id AS group_id, robots.id AS robot_id, robots.robot_number, robots.ident, \
+            robots.prefix, robots.suffix, robots.plural, robot_groups.content_warning, \
+            robot_groups.image_path, robot_groups.alt, robot_groups.custom_alt, robot_groups.body, \
+            robot_groups.tweet_id \
         FROM robots INNER JOIN robot_groups ON robots.group_id = robot_groups.id \
         WHERE robots.id IN (SELECT robot_id FROM past_dailies ORDER BY posted_on DESC LIMIT 1) \
         LIMIT 1",
@@ -378,9 +373,10 @@ async fn daily_robot(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse> 
 async fn random_robot(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse> {
     let robot: RobotFull = sqlx::query_as(
         "SELECT \
-            robot_groups.id AS group_id, robots.id AS robot_id, robots.robot_number, robots.prefix, \
-            robots.suffix, robots.plural, robot_groups.content_warning, robot_groups.image_path, \
-            robot_groups.alt, robot_groups.custom_alt, robot_groups.body, robot_groups.tweet_id \
+            robot_groups.id AS group_id, robots.id AS robot_id, robots.robot_number, robots.ident, \
+            robots.prefix, robots.suffix, robots.plural, robot_groups.content_warning, \
+            robot_groups.image_path, robot_groups.alt, robot_groups.custom_alt, robot_groups.body, \
+            robot_groups.tweet_id \
         FROM robots INNER JOIN robot_groups ON robots.group_id = robot_groups.id \
         LIMIT 1 \
         OFFSET FLOOR(RANDOM() * (SELECT COUNT (*) FROM robots))",
