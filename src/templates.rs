@@ -1,4 +1,4 @@
-use maud::{html, Markup, DOCTYPE};
+use maud::{DOCTYPE, Markup, html};
 
 pub(crate) fn base(title: &str, header: Markup, main: Markup, footer: Markup) -> Markup {
     html! {
@@ -67,7 +67,11 @@ pub(crate) fn footer() -> Markup {
     html! {
         div class="colour" {
             div class="page_footer content" {
-                p { "Here is a footer" }
+                p {
+                    "The Small Robots Archive is an open-source project. To report an issue or contribute, go to "
+                    a class="link_text_light" href="https://github.com/Pantonshire/small_robots_archive" { "Pantonshire/small_robots_archive" }
+                    " on GitHub."
+                }
             }
         }
     }

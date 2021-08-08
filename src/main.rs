@@ -413,18 +413,18 @@ async fn about_page() -> MarkupResponse {
                 p {
                     "If you find something wrong with this site, please "
                     a class="link_text" href="https://github.com/Pantonshire/small_robots_archive/issues/new" { "open an issue" }
-                    " on Github."
+                    " on GitHub."
                 }
             }
             div class="section" {
                 h2 id="setup" { "Setting up your own archive instance" }
                 p {
-                    "This is an open-source project; the source code can be found on "
-                    a class="link_text" href="https://github.com/Pantonshire/small_robots_archive" { "Github" }
-                    ". You are free to clone the repository and set up your own instance of this archive!"
+                    "This is an open-source project; the source code can be found at "
+                    a class="link_text" href="https://github.com/Pantonshire/small_robots_archive" { "Pantonshire/small_robots_archive" }
+                    " on GitHub. You are free to clone the repository and set up your own instance of this archive!"
                 }
                 p {
-                    "TODO: link to guide on Github"
+                    "TODO: link to guide on GitHub"
                 }
             }
             div class="section" {
