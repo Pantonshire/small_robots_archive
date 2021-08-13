@@ -98,8 +98,7 @@ pub(crate) trait Displayable {
 
 #[derive(FromRow, Clone, Debug)]
 pub(crate) struct RobotTextLink {
-    pub(crate) group_id: i32,
-    pub(crate) robot_id: i32,
+    pub(crate) id: i32,
     pub(crate) robot_number: i32,
     pub(crate) ident: String,
     pub(crate) prefix: String,
@@ -129,8 +128,7 @@ impl Named for RobotTextLink {
 
 #[derive(FromRow, Clone, Debug)]
 pub(crate) struct RobotPreview {
-    pub(crate) group_id: i32,
-    pub(crate) robot_id: i32,
+    pub(crate) id: i32,
     pub(crate) robot_number: i32,
     pub(crate) ident: String,
     pub(crate) prefix: String,
@@ -173,8 +171,7 @@ impl Displayable for RobotPreview {
 
 #[derive(FromRow, Clone, Debug)]
 pub(crate) struct RobotFull {
-    pub(crate) group_id: i32,
-    pub(crate) robot_id: i32,
+    pub(crate) id: i32,
     pub(crate) robot_number: i32,
     pub(crate) ident: String,
     pub(crate) prefix: String,
