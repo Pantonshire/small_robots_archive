@@ -17,7 +17,7 @@ RUN apk add --no-cache libcap
 RUN setcap 'cap_net_bind_service=+ep' /usr/local/bin/sbb_archive
 EXPOSE 80
 ENV BIND_ADDRESS="0.0.0.0:80"
-RUN groupadd -r archive
-RUN useradd -r -g archive archive
+RUN addgroup -S archive
+RUN adduser -SDH -G archive archive
 USER archive
 ENTRYPOINT ["/usr/local/bin/sbb_archive"]
