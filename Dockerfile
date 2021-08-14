@@ -1,19 +1,23 @@
-# Build stage: compile the binary for the runtime stage to use
 FROM rust:1.54-alpine as build
 WORKDIR /app/
 COPY Cargo.toml Cargo.lock ./
 COPY src/ ./src/
 RUN apk update
-# Install musl development files, which the paste crate links
 RUN apk add --no-cache musl-dev
 RUN cargo build --release --no-default-features
 
-# Runtime stage: set up the environment needed to run the binary
 FROM alpine:latest as runtime
 COPY --from=build /app/target/release/sbb_archive /usr/local/bin/sbb_archive
 WORKDIR /srv/www/
 COPY static/ ./static/
+RUN mkdir -p generated/bootstrap
 RUN mkdir -p generated/robot_images
-ENV BIND_ADDRESS="0.0.0.0:80"
+RUN apk update
+RUN apk add --no-cache libcap
+RUN setcap 'cap_net_bind_service=+ep' /usr/local/bin/sbb_archive
 EXPOSE 80
+ENV BIND_ADDRESS="0.0.0.0:80"
+RUN groupadd -r archive
+RUN useradd -r -g archive archive
+USER archive
 ENTRYPOINT ["/usr/local/bin/sbb_archive"]
