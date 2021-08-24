@@ -59,8 +59,8 @@ impl<'a> RobotImage<'a> {
 
     fn alt(self) -> &'a str {
         const MISSING_ALT: &str =
-            "Sorry, no alt text was found for this robot. Please let me know at pantonshire@gmail.com, \
-            and I'll fix it as soon as I can.";
+            "Sorry, no alt text was found for this robot. Please direct message me @PantonshireDev on \
+            Twitter, and I'll fix it as soon as I can.";
 
         self.custom_alt
             .or(self.orig_alt)

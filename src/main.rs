@@ -77,7 +77,7 @@ async fn landing_page(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse>
             id, robot_number, ident, prefix, suffix, plural, content_warning, image_thumb_path, \
             alt, custom_alt \
         FROM robots \
-        ORDER BY robot_number DESC, id DESC \
+        ORDER BY tweet_time DESC \
         LIMIT 10"
     )
     .fetch_all(&*pool)
