@@ -11,7 +11,7 @@ WORKDIR /app/
 RUN apk update && apk add --no-cache musl-dev
 RUN cargo install cargo-chef && rm -rf /usr/local/cargo/registry/
 COPY --from=planner /app/recipe.json ./recipe.json
-RUN cargo chef cook --release --recipe-path recipe.json
+RUN cargo chef cook --release --no-default-features --recipe-path recipe.json
 
 FROM rust:1.54-alpine as builder
 WORKDIR /app/
