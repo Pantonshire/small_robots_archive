@@ -316,7 +316,7 @@ fn render_robot(robot: RobotFull) -> MarkupResponse {
                 @match robot.content_warning.as_deref() {
                     Some(content_warning) => {
                         details {
-                            summary { "Content Warning: " (content_warning) }
+                            summary { "(Click to expand) Content warning: " (content_warning) }
                             (robot_content)
                         }
                     }
