@@ -325,30 +325,6 @@ fn render_robot(robot: RobotFull) -> MarkupResponse {
                         (robot_content)
                     }
                 }
-
-                div class="robot_content" {
-                    @if let Some(image_resource_url) = robot.image_resource_url() {
-                        div class="robot_image_full_container" {
-                            a href=(tweet_link) {
-                                img
-                                    class="robot_image_full"
-                                    src=(image_resource_url)
-                                    alt=(robot.image_alt())
-                                    draggable="false";
-                            }
-                        }
-                    }
-
-                    div class="robot_description" {
-                        p {
-                            (robot.body)
-                        }
-
-                        p {
-                            a class="link_text" href=(tweet_link) { "Go to original Tweet" }
-                        }
-                    }
-                }
             }
         }
     ).into()
