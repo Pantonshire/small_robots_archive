@@ -309,6 +309,8 @@ ul.robots_grid {
 }
 
 .robot_content {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-areas: "image description";
