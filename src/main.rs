@@ -281,19 +281,50 @@ fn render_robot(robot: RobotFull) -> MarkupResponse {
 
     let tweet_link = format!("https://twitter.com/smolrobots/status/{}", robot.tweet_id);
 
+    let robot_content = html! {
+        div class="robot_content" {
+            @if let Some(image_resource_url) = robot.image_resource_url() {
+                div class="robot_image_full_container" {
+                    a href=(tweet_link) {
+                        img
+                            class="robot_image_full"
+                            src=(image_resource_url)
+                            alt=(robot.image_alt())
+                            draggable="false";
+                    }
+                }
+            }
+
+            div class="robot_description" {
+                p {
+                    (robot.body)
+                }
+
+                p {
+                    a class="link_text" href=(tweet_link) { "Go to original Tweet" }
+                }
+            }
+        }
+    };
+
     templates::archive_page(
         &full_name,
         html! {
             div class="section" {
-                @if let Some(content_warning) = robot.content_warning.as_deref() {
-                    // details open {
-                    //     summary { "Content warning" }
-                    //     (content_warning)
-                    // }
-                    p { "Content warning: " (content_warning) }
-                }
-
                 h2 class="robot_title" { span class="robot_number" { "#" (robot.robot_number) } " " (full_name) }
+
+                @match robot.content_warning.as_deref() {
+                    Some(content_warning) => {
+                        details {
+                            summary { "Content Warning: " (content_warning) }
+                            (robot_content)
+                        }
+                    }
+
+                    None => {
+                        (robot_content)
+                    }
+                }
 
                 div class="robot_content" {
                     @if let Some(image_resource_url) = robot.image_resource_url() {
