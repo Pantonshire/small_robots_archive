@@ -15,9 +15,7 @@ lazy_static! {
 
 const MAX_ROBOTS: i32 = 48;
 
-//TODO: limit length of query string
-//TODO: check for numbers in search query
-//TODO: escape SQL wildcards
+//TODO: escape SQL wildcards (%, _ etc.)
 
 pub(crate) async fn search(db_pool: &PgPool, query: &str) -> ResponseResult<Vec<RobotPreview>> {
     let query_terms = {
@@ -52,6 +50,32 @@ pub(crate) async fn search(db_pool: &PgPool, query: &str) -> ResponseResult<Vec<
     // We only want to show each robot once, so keep track of the ids
     let mut found_ids = HashSet::new();
 
+    let query_numbers = query_terms
+        .iter()
+        .filter_map(|term| term.parse::<i32>().ok())
+        .collect::<Vec<_>>();
+
+    if !query_numbers.is_empty() {
+        let number_matches: Vec<RobotPreview> = sqlx::query_as(
+            "SELECT \
+                id, robot_number, ident, prefix, suffix, plural, content_warning, image_thumb_path, \
+                alt, custom_alt \
+            FROM robots \
+            WHERE robot_number = ANY($1) \
+            LIMIT $2"
+        )
+        .bind(&query_numbers)
+        .bind(MAX_ROBOTS)
+        .fetch_all(db_pool)
+        .await
+        .map_err(actix_web::error::ErrorInternalServerError)?;
+
+        for robot in number_matches {
+            found_ids.insert(robot.id);
+            found_robots.push(robot);
+        }
+    }
+
     let ident_matches: Vec<RobotPreview> = sqlx::query_as(
         "SELECT \
             id, robot_number, ident, prefix, suffix, plural, content_warning, image_thumb_path, \
@@ -66,14 +90,16 @@ pub(crate) async fn search(db_pool: &PgPool, query: &str) -> ResponseResult<Vec<
         LIMIT $2"
     )
     .bind(&query_terms)
-    .bind(MAX_ROBOTS)
+    .bind(MAX_ROBOTS - found_robots.len() as i32)
     .fetch_all(db_pool)
     .await
     .map_err(actix_web::error::ErrorInternalServerError)?;
 
     for robot in ident_matches {
-        found_ids.insert(robot.id);
-        found_robots.push(robot);
+        if !found_ids.contains(&robot.id) {
+            found_ids.insert(robot.id);
+            found_robots.push(robot);
+        }
     }
 
     let full_text_query = query_terms.join(" | ");
