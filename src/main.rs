@@ -4,6 +4,7 @@ mod templates;
 mod pages;
 mod services;
 mod robots;
+mod search;
 
 use std::env;
 use std::error;
@@ -14,6 +15,7 @@ use std::ops::Add;
 use actix_web::{get, HttpServer, App, web};
 use sqlx::postgres::PgPool;
 use maud::{html, PreEscaped};
+use serde::Deserialize;
 
 use clone_data::CloneData;
 use respond::{ResponseResult, MarkupResponse};
@@ -276,6 +278,47 @@ async fn all_robots_paged(pool: CloneData<PgPool>, page: web::Path<u32>) -> Resp
     render_all_robots(pool.inner, page).await
 }
 
+#[derive(Deserialize)]
+struct SearchQuery {
+    query: String,
+}
+
+#[get("/search")]
+async fn search_robots(pool: CloneData<PgPool>, query: web::Query<SearchQuery>) -> ResponseResult<MarkupResponse> {
+    const MAX_QUERY_CHARS: usize = 64;
+
+    let search_query = query.query.chars().take(MAX_QUERY_CHARS).collect::<String>();
+
+    let robots = search::search(&*pool, &search_query).await?;
+
+    Ok(templates::archive_page(
+        "All robots",
+        html! {
+            div class="section" {
+                h2 { "Search results for \"" (search_query) "\"" }
+                ul class="robots_grid" {
+                    @for robot in &robots {
+                        li class="robot_container" {
+                            a href=(robot.page_link()) class="link_area" {
+                                @if let Some(image_resource_url) = robot.image_resource_url() {
+                                    img
+                                        src=(image_resource_url)
+                                        alt=(robot.image_alt())
+                                        draggable="false";
+                                } @else {
+                                    img alt="Image not found";
+                                }
+                                h3 { (robot.full_name()) }
+                                h3 class="robot_number" { "#"(robot.robot_number) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ).into())
+}
+
 fn render_robot(robot: RobotFull) -> MarkupResponse {
     let full_name = robot.full_name();
 
@@ -520,6 +563,7 @@ async fn main() -> Result<(), ServerError> {
             .service(all_robots)
             .service(all_robots_paged)
             .service(robot_page)
+            .service(search_robots)
             .service(daily_robot)
             .service(random_robot)
             .service(about_page)
