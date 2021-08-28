@@ -21,6 +21,4 @@ chrono = "0.4"
 maud = "0.22"
 serde = "1"
 unidecode = "0.3"
-lazy_static = "1"
-regex = "1"
 dotenv = { version = "0.15", optional = true }

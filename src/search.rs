@@ -1,47 +1,17 @@
 use std::collections::HashSet;
 
-use lazy_static::lazy_static;
-use regex::Regex;
 use sqlx::postgres::PgPool;
 use unidecode::unidecode;
 
 use crate::respond::ResponseResult;
 use crate::robots::RobotPreview;
 
-lazy_static! {
-    // Regex for matching "bot" at the end of a word
-    static ref BOT_SUFFIX_RE: Regex = Regex::new(r"([Bb][^\w]*[Oo][^\w]*[Tt])([^\w]*[Ss][^\w]*)?$").unwrap();
-}
-
 const MAX_ROBOTS: i32 = 48;
 
-//TODO: escape SQL wildcards (%, _ etc.)
-
 pub(crate) async fn search(db_pool: &PgPool, query: &str) -> ResponseResult<Vec<RobotPreview>> {
-    let query_terms = {
-        // Split the query by whitespace and convert to lowercase ascii
-        let words = query
-            .split_whitespace()
-            .map(|word| {
-                let mut word_lower_ascii = unidecode(word).to_lowercase();
-                word_lower_ascii.retain(|c| !c.is_ascii_whitespace());
-                word_lower_ascii
-            })
-            .collect::<Vec<_>>();
-
-        let mut query_terms = Vec::new();
-
-        for word in words {
-            // Create a copy of any words ending with "bot", with the "bot" removed
-            if let Some(re_match) = BOT_SUFFIX_RE.find(&word) {
-                let trimmed_word = word[..re_match.start()].to_owned();
-                query_terms.push(trimmed_word);
-            }
-
-            query_terms.push(word);
-        }
-        
-        query_terms
+    let query_terms = match to_query_terms(query) {
+        Some(query_terms) => query_terms,
+        None => return Ok(Vec::new()),
     };
 
     // Vector for storing the robots found by the search
@@ -50,33 +20,119 @@ pub(crate) async fn search(db_pool: &PgPool, query: &str) -> ResponseResult<Vec<
     // We only want to show each robot once, so keep track of the ids
     let mut found_ids = HashSet::new();
 
-    let query_numbers = query_terms
-        .iter()
-        .filter_map(|term| term.parse::<i32>().ok())
-        .collect::<Vec<_>>();
-
-    if !query_numbers.is_empty() {
-        let number_matches: Vec<RobotPreview> = sqlx::query_as(
-            "SELECT \
-                id, robot_number, ident, prefix, suffix, plural, content_warning, image_thumb_path, \
-                alt, custom_alt \
-            FROM robots \
-            WHERE robot_number = ANY($1) \
-            LIMIT $2"
-        )
-        .bind(&query_numbers)
-        .bind(MAX_ROBOTS)
-        .fetch_all(db_pool)
+    if let Some(number_matches) = search_by_number(db_pool, &query_terms, MAX_ROBOTS)
         .await
-        .map_err(actix_web::error::ErrorInternalServerError)?;
-
+        .map_err(actix_web::error::ErrorInternalServerError)?
+    {
         for robot in number_matches {
             found_ids.insert(robot.id);
             found_robots.push(robot);
         }
     }
 
-    let ident_matches: Vec<RobotPreview> = sqlx::query_as(
+    let ident_matches = search_by_ident(db_pool, &query_terms, MAX_ROBOTS - found_robots.len() as i32)
+        .await
+        .map_err(actix_web::error::ErrorInternalServerError)?;
+
+    for robot in ident_matches {
+        if !found_ids.contains(&robot.id) {
+            found_ids.insert(robot.id);
+            found_robots.push(robot);
+        }
+    }
+
+    let full_text_matches = search_by_full_text(db_pool, query, MAX_ROBOTS - found_robots.len() as i32)
+        .await
+        .map_err(actix_web::error::ErrorInternalServerError)?;
+
+    for robot in full_text_matches {
+        if !found_ids.contains(&robot.id) {
+            found_ids.insert(robot.id);
+            found_robots.push(robot);
+        }
+    }
+
+    Ok(found_robots)
+}
+
+fn to_query_terms(query: &str) -> Option<Vec<String>> {
+    // Split the query by whitespace and convert to lowercase ASCII
+    let words = query
+        .split_whitespace()
+        .filter_map(|word| {
+            // Apply the same transformation to the word as the transformation that Smolbotbot
+            // applies to robot name prefixes to generate the ident: convert to lowercase ASCII
+            // then remove all non-alphanumeric characters
+            let mut word_lower_ascii = unidecode(word).to_lowercase();
+            word_lower_ascii.retain(|char| char.is_ascii_alphanumeric());
+
+            // Discard words which do not have any alphanumeric characters
+            if word_lower_ascii.is_empty() {
+                None
+            } else {
+                Some(word_lower_ascii)
+            }
+        })
+        .collect::<Vec<_>>();
+
+    if words.is_empty() {
+        return None;
+    }
+
+    let mut query_terms = Vec::new();
+
+    for word in words {
+        // Create a copy of any words ending with "bot", with the "bot" removed
+        if let Some(trimmed_word) = word.strip_suffix("bot").or(word.strip_suffix("bots")) {
+            if !trimmed_word.is_empty() {
+                query_terms.push(trimmed_word.to_owned());
+            }
+        }
+
+        query_terms.push(word);
+    }
+
+    Some(query_terms)
+}
+
+async fn search_by_number(
+    db_pool: &PgPool,
+    query_terms: &[String],
+    limit: i32,
+) -> sqlx::Result<Option<Vec<RobotPreview>>>
+{
+    let query_numbers = query_terms
+        .iter()
+        .filter_map(|term| term.parse::<i32>().ok())
+        .collect::<Vec<_>>();
+
+    if query_numbers.is_empty() {
+        return Ok(None);
+    }
+
+    let robots = sqlx::query_as(
+        "SELECT \
+            id, robot_number, ident, prefix, suffix, plural, content_warning, image_thumb_path, \
+            alt, custom_alt \
+        FROM robots \
+        WHERE robot_number = ANY($1) \
+        LIMIT $2"
+    )
+    .bind(&query_numbers)
+    .bind(limit)
+    .fetch_all(db_pool)
+    .await?;
+
+    Ok(Some(robots))
+}
+
+async fn search_by_ident(
+    db_pool: &PgPool,
+    query_terms: &[String],
+    limit: i32,
+) -> sqlx::Result<Vec<RobotPreview>>
+{
+    sqlx::query_as(
         "SELECT \
             id, robot_number, ident, prefix, suffix, plural, content_warning, image_thumb_path, \
             alt, custom_alt \
@@ -90,41 +146,28 @@ pub(crate) async fn search(db_pool: &PgPool, query: &str) -> ResponseResult<Vec<
         LIMIT $2"
     )
     .bind(&query_terms)
-    .bind(MAX_ROBOTS - found_robots.len() as i32)
+    .bind(limit)
     .fetch_all(db_pool)
     .await
-    .map_err(actix_web::error::ErrorInternalServerError)?;
+}
 
-    for robot in ident_matches {
-        if !found_ids.contains(&robot.id) {
-            found_ids.insert(robot.id);
-            found_robots.push(robot);
-        }
-    }
-
-    let full_text_query = query_terms.join(" | ");
-
-    let full_text_matches: Vec<RobotPreview> = sqlx::query_as(
+async fn search_by_full_text(
+    db_pool: &PgPool,
+    query: &str,
+    limit: i32
+) -> sqlx::Result<Vec<RobotPreview>>
+{
+    sqlx::query_as(
         "SELECT \
             id, robot_number, ident, prefix, suffix, plural, content_warning, image_thumb_path, \
             alt, custom_alt \
         FROM robots
-        WHERE ts @@ to_tsquery('english', $1)
-        ORDER BY ts_rank(ts, to_tsquery('english', $1)) DESC
+        WHERE ts @@ replace(plainto_tsquery('english', $1)::text, '&', '|')::tsquery
+        ORDER BY ts_rank(ts, replace(plainto_tsquery('english', $1)::text, '&', '|')::tsquery) DESC
         LIMIT $2"
     )
-    .bind(&full_text_query)
-    .bind(MAX_ROBOTS - found_robots.len() as i32)
+    .bind(query)
+    .bind(limit)
     .fetch_all(db_pool)
     .await
-    .map_err(actix_web::error::ErrorInternalServerError)?;
-
-    for robot in full_text_matches {
-        if !found_ids.contains(&robot.id) {
-            found_ids.insert(robot.id);
-            found_robots.push(robot);
-        }
-    }
-
-    Ok(found_robots)
 }
