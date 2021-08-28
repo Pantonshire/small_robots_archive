@@ -5,11 +5,12 @@ body {
         "header"
         "main"
         "footer";
+    grid-template-columns: 100%;
     grid-template-rows: auto 1fr auto;
     margin: 0;
     padding: 0;
     font-family: Gill Sans, Gill Sans MT, Calibri, sans-serif;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 300;
 }
 
@@ -85,6 +86,10 @@ CFA0CC (small robots book)
     color: #FFFFFF;
 }
 
+.word_break {
+    word-break: break-all;
+}
+
 .title_banner {
     /* display: flex;
     flex-direction: row; */
@@ -95,14 +100,14 @@ CFA0CC (small robots book)
 .title_banner h1 {
     margin-top: 0.25rem;
     margin-bottom: 0.25rem;
-    font-size: 3rem;
+    font-size: 2.5rem;
 }
 
 .title_banner h2 {
     margin-top: 0.25rem;
     margin-bottom: 0.25rem;
     font-weight: 300;
-    font-size: 1.75rem;
+    font-size: 1.5rem;
 }
 
 .banner_image_container {
@@ -121,11 +126,13 @@ CFA0CC (small robots book)
 }
 
 .site_nav {
-    display: flex;
+    /* display: flex;
     justify-content: space-between;
+    flex-direction: row-reverse; */
 }
 
 .search_bar {
+    width: 100%;
     height: 100%;
     font-size: 1rem;
     padding-left: 0.5rem;
@@ -133,17 +140,23 @@ CFA0CC (small robots book)
     box-sizing: border-box;
     border: 2px solid #C185BD;
     border-radius: 3px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 1rem;
+    margin-bottom: 0;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
 }
 
 .site_nav ul {
     list-style-type: none;
-    font-size: 1.2rem;
-    margin-left: -1.5rem;
-    margin-right: 0rem;
-    margin-top: 0rem;
-    margin-bottom: 0rem;
-    padding: 0;
     display: flex;
+    margin-top: 0;
+    margin-bottom: 0;
+    overflow-x: scroll;
+    white-space: nowrap;
+    font-size: inherit;
+    padding: 0;
 }
 
 .site_nav li {
@@ -152,10 +165,11 @@ CFA0CC (small robots book)
 }
 
 .site_nav a {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+    /* width: 100%; */
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
+    /* padding-left: 1rem; */
+    padding-right: 2rem;
     display: inline-block;
     text-decoration: none;
 }
@@ -167,8 +181,8 @@ CFA0CC (small robots book)
 }
 
 .pagination {
-    margin-top: 3rem;
-    margin-bottom: 3rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
 }
 
 .pagination ul {
@@ -176,6 +190,7 @@ CFA0CC (small robots book)
     padding: 0;
     display: flex;
     justify-content: center;
+    flex-wrap: wrap;
 }
 
 .pagination_item_major {
@@ -196,6 +211,7 @@ CFA0CC (small robots book)
 }
 
 .pagination_number_current, .pagination_elipsis, .pagination_number_other {
+    display: inline-block;
     font-weight: 400;
 }
 
@@ -219,6 +235,7 @@ CFA0CC (small robots book)
 }
 
 .pagination_disabled {
+    display: inline-block;
     color: #BEBEBE;
     border: 2px solid #D8D8D8;
     border-radius: 2px;
@@ -239,11 +256,6 @@ CFA0CC (small robots book)
     flex-direction: row;
     overflow-x: scroll;
     white-space: nowrap;
-    scroll-snap-type: x mandatory;
-    margin-left: -1rem;
-    margin-right: 0rem;
-    margin-top: 0rem;
-    margin-bottom: 0rem;
 }
 
 ul.robots_row {
@@ -253,7 +265,7 @@ ul.robots_row {
 
 .robots_grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     margin-left: -1rem;
     margin-right: 0rem;
     margin-top: 0rem;
@@ -266,15 +278,15 @@ ul.robots_grid {
 }
 
 .robot_container {
-    scroll-snap-align: center;
     margin-left: 1rem;
     margin-right: 1rem;
     text-align: center;
+    word-break: break-all;
 }
 
 .robot_container img {
-    width: 128px;
-    height: 128px;
+    width: 100px;
+    height: 100px;
     border-radius: 3px;
     transition: all 0.2s ease-in-out;
 }
@@ -293,7 +305,7 @@ ul.robots_grid {
     margin-top: 0.25rem;
     margin-bottom: 0.25rem;
     font-weight: 400;
-    font-size: 1.2rem;
+    font-size: inherit;
 }
 
 .robot_container .robot_number {
@@ -311,19 +323,17 @@ ul.robots_grid {
 .robot_content {
     margin-top: 1rem;
     margin-bottom: 1rem;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas: "image description";
 }
 
 .robot_description {
-    margin-left: 3rem;
     grid-area: description;
+    margin-top: 2rem;
 }
 
 .robot_image_full_container {
     grid-area: image;
     box-shadow: 0 0 1rem #C0C0C0;
+    height: auto;
     /* box-sizing: border-box;
     border: 3px solid #C185BD;
     border-radius: 3px; */
@@ -333,4 +343,93 @@ ul.robots_grid {
     display: block;
     width: 100%;
     height: auto;
+}
+
+@media screen and (min-width: 22em) {
+    body {
+        font-size: 1.2rem;
+    }
+}
+
+@media screen and (min-width: 25em) {
+    .robot_container img {
+        width: 128px;
+        height: 128px;
+    }
+}
+
+@media screen and (min-width: 32em) {
+    .search_bar {
+        width: auto;
+    }
+
+    .robots_grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .robot_content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto;
+        grid-template-areas:
+            "image description"
+            "remainder description";
+    }
+    
+    .robot_description {
+        margin-left: 3rem;
+        margin-top: 0;
+    }
+}
+
+@media screen and (min-width: 50em) {
+    .robots_grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media screen and (min-width: 56em) {
+    .site_nav {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .site_nav ul {
+        display: flex;
+        overflow-x: auto;
+        margin-left: -1.5rem;
+        margin-right: 0rem;
+        margin-top: 0rem;
+        margin-bottom: 0rem;
+    }
+
+    .site_nav a {
+        width: auto;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    .search_bar {
+        width: auto;
+        padding-top: 0;
+        padding-bottom: 0;
+        margin: 0;
+    }
+
+    .title_banner h1 {
+        font-size: 3rem;
+    }
+    
+    .title_banner h2 {
+        margin-top: 0.25rem;
+        margin-bottom: 0.25rem;
+        font-weight: 300;
+        font-size: 1.75rem;
+    }
+}
+
+@media screen and (min-width: 62em) {
+    .robots_grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
 }

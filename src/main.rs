@@ -80,7 +80,7 @@ async fn landing_page(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse>
             alt, custom_alt \
         FROM robots \
         ORDER BY tweet_time DESC \
-        LIMIT 10"
+        LIMIT 20"
     )
     .fetch_all(&*pool)
     .await
@@ -295,7 +295,7 @@ async fn search_robots(pool: CloneData<PgPool>, query: web::Query<SearchQuery>) 
         "All robots",
         html! {
             div class="section" {
-                h2 { "Search results for \"" (search_query) "\"" }
+                h2 class="word_break" { "Search results for \"" (search_query) "\"" }
                 ul class="robots_grid" {
                     @for robot in &robots {
                         li class="robot_container" {
@@ -354,7 +354,9 @@ fn render_robot(robot: RobotFull) -> MarkupResponse {
         &full_name,
         html! {
             div class="section" {
-                h2 class="robot_title" { span class="robot_number" { "#" (robot.robot_number) } " " (full_name) }
+                h2 class="robot_title word_break" {
+                    span class="robot_number" { "#" (robot.robot_number) } " " (full_name)
+                }
 
                 @match robot.content_warning.as_deref() {
                     Some(content_warning) => {

@@ -6,6 +6,7 @@ pub(crate) fn base(title: &str, header: Markup, main: Markup, footer: Markup) ->
         html {
             head {
                 meta charset="utf-8";
+                meta name="viewport" content="width=device-width, initial-scale=1";
                 link rel="stylesheet" href="/static/style/main.css";
                 title { (title) }
             }
