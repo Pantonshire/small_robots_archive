@@ -1,6 +1,8 @@
 use maud::{DOCTYPE, Markup, html};
 
-pub(crate) fn base(title: &str, header: Markup, main: Markup, footer: Markup) -> Markup {
+/// Returns a basic page whose body consists of three sections: header, main and footer,
+/// in that order.
+pub fn base(title: &str, header: Markup, main: Markup, footer: Markup) -> Markup {
     html! {
         (DOCTYPE)
         html {
@@ -28,11 +30,13 @@ pub(crate) fn base(title: &str, header: Markup, main: Markup, footer: Markup) ->
     }
 }
 
-pub(crate) fn archive_page(title: &str, content: Markup) -> Markup {
+/// Returns a page with the default header and footer.
+pub fn archive_page(title: &str, content: Markup) -> Markup {
     base(title, header(), html! { div class="content" { (content) } }, footer())
 }
 
-pub(crate) fn header() -> Markup {
+/// The default header, containing a navigation menu and search bar.
+pub fn header() -> Markup {
     html! {
         div class="colour" {
             div class="title_banner content" {
@@ -64,7 +68,8 @@ pub(crate) fn header() -> Markup {
     }
 }
 
-pub(crate) fn footer() -> Markup {
+/// The default footer, containing some information about the site.
+pub fn footer() -> Markup {
     html! {
         div class="colour" {
             div class="page_footer content" {
