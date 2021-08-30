@@ -11,14 +11,14 @@ use std::fmt;
 use std::io;
 use std::ops::Add;
 
-use actix_web::{get, HttpServer, App, web, HttpResponse, middleware::Logger};
+use actix_web::{get, HttpServer, App, web, HttpRequest};
 use sqlx::postgres::PgPool;
 use maud::{html, PreEscaped};
 use serde::Deserialize;
 
 use clone_data::CloneData;
-use error::{SiteResult, SiteError};
-use respond::{ResponseResult, MarkupResponse};
+use error::{SiteError, SiteReportError, SiteReportResult, IntoReport};
+use respond::MarkupResponse;
 use robots::{Linkable, Named, Displayable, RobotPreview, RobotFull};
 
 const DEFAULT_BIND_ADDR: &str = "[::1]:8080";
@@ -73,7 +73,7 @@ impl From<env::VarError> for ServerError {
 }
 
 #[get("/")]
-async fn landing_page(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse> {
+async fn landing_page(pool: CloneData<PgPool>) -> SiteReportResult<MarkupResponse> {
     let latest: Vec<RobotPreview> = sqlx::query_as(
         "SELECT \
             id, robot_number, ident, prefix, suffix, plural, content_warning, image_thumb_path, \
@@ -84,9 +84,9 @@ async fn landing_page(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse>
     )
     .fetch_all(&*pool)
     .await
-    .map_err(actix_web::error::ErrorInternalServerError)?; //TODO: log error?
+    .map_err(|err| err.into_report("failed to get latest robots"))?;
 
-    Ok(page::archive_page(
+    Ok(MarkupResponse::ok(page::archive_page(
         "Small Robots Archive",
         html! {
             div class="section" {
@@ -137,17 +137,17 @@ async fn landing_page(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse>
                 }
             }
         }
-    ).into())
+    )))
 }
 
 //TODO: render content warnings
-async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResponse> {
+async fn render_all_robots(pool: PgPool, page: u32) -> SiteReportResult<MarkupResponse> {
     const PAGE_SIZE: u32 = 48;
 
     let num_robots: robots::Count = sqlx::query_as("SELECT COUNT(*) AS count FROM robots")
         .fetch_one(&pool)
         .await
-        .map_err(actix_web::error::ErrorInternalServerError)?;
+        .map_err(|err| err.into_report("failed to count rows in robots table"))?;
 
     let num_pages = num_robots.pages(PAGE_SIZE);
 
@@ -167,7 +167,7 @@ async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResp
     .bind(offset)
     .fetch_all(&pool)
     .await
-    .map_err(actix_web::error::ErrorInternalServerError)?;
+    .map_err(|err| err.into_report(format!("failed to get robots page {}", page)))?;
 
     let pagination = Pagination::try_new(page, num_pages);
 
@@ -229,7 +229,7 @@ async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResp
         }
     });
 
-    Ok(page::archive_page(
+    Ok(MarkupResponse::ok(page::archive_page(
         "All robots",
         html! {
             div class="section" {
@@ -260,20 +260,21 @@ async fn render_all_robots(pool: PgPool, page: u32) -> ResponseResult<MarkupResp
                 }
             }
         }
-    ).into())
+    )))
 }
 
 #[get("/all")]
-async fn all_robots(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse> {
+async fn all_robots(pool: CloneData<PgPool>) -> SiteReportResult<MarkupResponse> {
     render_all_robots(pool.inner, 0).await
 }
 
 #[get("/all/{page}")]
-async fn all_robots_paged(pool: CloneData<PgPool>, page: web::Path<u32>) -> ResponseResult<MarkupResponse> {
+async fn all_robots_paged(pool: CloneData<PgPool>, page: web::Path<u32>) -> SiteReportResult<MarkupResponse> {
+    let page = page.into_inner();
+
     let page = page
-        .into_inner()
         .checked_sub(1)
-        .ok_or_else(|| actix_web::error::ErrorNotFound("invalid page number"))?;
+        .ok_or_else(|| SiteError::BadRequest.report(format!("invalid page number {}", page)))?;
 
     render_all_robots(pool.inner, page).await
 }
@@ -284,14 +285,14 @@ struct SearchQuery {
 }
 
 #[get("/search")]
-async fn search_robots(pool: CloneData<PgPool>, query: web::Query<SearchQuery>) -> ResponseResult<MarkupResponse> {
+async fn search_robots(pool: CloneData<PgPool>, query: web::Query<SearchQuery>) -> SiteReportResult<MarkupResponse> {
     const MAX_QUERY_CHARS: usize = 64;
 
     let search_query = query.query.chars().take(MAX_QUERY_CHARS).collect::<String>();
 
     let robots = search::search(&*pool, &search_query).await?;
 
-    Ok(page::archive_page(
+    Ok(MarkupResponse::ok(page::archive_page(
         "All robots",
         html! {
             div class="section" {
@@ -316,7 +317,7 @@ async fn search_robots(pool: CloneData<PgPool>, query: web::Query<SearchQuery>) 
                 }
             }
         }
-    ).into())
+    )))
 }
 
 fn render_robot(robot: RobotFull) -> MarkupResponse {
@@ -350,7 +351,7 @@ fn render_robot(robot: RobotFull) -> MarkupResponse {
         }
     };
 
-    page::archive_page(
+    MarkupResponse::ok(page::archive_page(
         &full_name,
         html! {
             div class="section" {
@@ -372,14 +373,13 @@ fn render_robot(robot: RobotFull) -> MarkupResponse {
                 }
             }
         }
-    ).into()
+    ))
 }
 
 #[get("/robots/{number}/{ident}")]
-async fn robot_page(pool: CloneData<PgPool>, path: web::Path<(i32, String)>) -> ResponseResult<MarkupResponse> {
+async fn robot_page(pool: CloneData<PgPool>, path: web::Path<(i32, String)>) -> SiteReportResult<MarkupResponse> {
     let (number, ident) = path.into_inner();
 
-    //TODO: 404 not found response
     let robot: RobotFull = sqlx::query_as(
         "SELECT \
             id, robot_number, ident, prefix, suffix, plural, content_warning, image_path, \
@@ -389,15 +389,17 @@ async fn robot_page(pool: CloneData<PgPool>, path: web::Path<(i32, String)>) -> 
     )
     .bind(number)
     .bind(&ident)
-    .fetch_one(&*pool)
+    .fetch_optional(&*pool)
     .await
-    .map_err(actix_web::error::ErrorInternalServerError)?;
+    .map_err(SiteError::from)
+    .and_then(|robot| robot.ok_or(SiteError::NotFound))
+    .map_err(|err| err.report(format!("failed to get robot {}/{}", number, ident)))?;
 
     Ok(render_robot(robot))
 }
 
 #[get("/daily")]
-async fn daily_robot(pool: CloneData<PgPool>) -> SiteResult<MarkupResponse> {
+async fn daily_robot(pool: CloneData<PgPool>) -> SiteReportResult<MarkupResponse> {
     let robot: RobotFull = sqlx::query_as(
         "SELECT \
             id, robot_number, ident, prefix, suffix, plural, content_warning, image_path, \
@@ -407,13 +409,14 @@ async fn daily_robot(pool: CloneData<PgPool>) -> SiteResult<MarkupResponse> {
         LIMIT 1",
     )
     .fetch_one(&*pool)
-    .await?;
+    .await
+    .map_err(|err| err.into_report("failed to get daily robot"))?;
 
     Ok(render_robot(robot))
 }
 
 #[get("/random")]
-async fn random_robot(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse> {
+async fn random_robot(pool: CloneData<PgPool>) -> SiteReportResult<MarkupResponse> {
     let robot: RobotFull = sqlx::query_as(
         "SELECT \
             id, robot_number, ident, prefix, suffix, plural, content_warning, image_path, \
@@ -424,14 +427,14 @@ async fn random_robot(pool: CloneData<PgPool>) -> ResponseResult<MarkupResponse>
     )
     .fetch_one(&*pool)
     .await
-    .map_err(actix_web::error::ErrorInternalServerError)?;
+    .map_err(|err| err.into_report("failed to get random robot"))?;
 
     Ok(render_robot(robot))
 }
 
 #[get("/about")]
 async fn about_page() -> MarkupResponse {
-    page::archive_page(
+    MarkupResponse::ok(page::archive_page(
         "About",
         html! {
             div class="section" {
@@ -479,11 +482,12 @@ async fn about_page() -> MarkupResponse {
                 }
             }
         }
-    ).into()
+    ))
 }
 
-async fn not_found() -> SiteError {
+async fn not_found(req: HttpRequest) -> SiteReportError {
     SiteError::NotFound
+        .report(req.path().to_owned())
 }
 
 #[derive(Clone, Debug)]
@@ -554,20 +558,19 @@ async fn main() -> Result<(), ServerError> {
         dotenv::dotenv().ok();
     }
 
+    env_logger::init();
+
     let pool = {
         let db_url = env::var(DB_URL_VAR)?;
         PgPool::connect(&db_url).await?
     };
 
-    //TODO: bootstrap directory
-
     let app_factory = move || {
         App::new()
-            .wrap(Logger::default())
-            .wrap(Logger::new("%a %{User-Agent}i"))
             .app_data(CloneData::new(pool.clone()))
             .service(actix_files::Files::new("/static", "./static"))
             .service(actix_files::Files::new("/robot_images", "./generated/robot_images"))
+            .service(actix_files::Files::new("/bootstrap", "./generated/bootstrap"))
             .service(landing_page)
             .service(all_robots)
             .service(all_robots_paged)

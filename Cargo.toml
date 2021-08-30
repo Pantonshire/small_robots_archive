@@ -21,4 +21,6 @@ chrono = "0.4"
 maud = "0.22"
 serde = "1"
 unidecode = "0.3"
+log = "0.4"
+env_logger = "0.9"
 dotenv = { version = "0.15", optional = true }

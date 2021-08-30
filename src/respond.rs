@@ -1,20 +1,34 @@
-use actix_web::{Responder, HttpRequest, HttpResponse};
+use actix_web::{Responder, HttpRequest, HttpResponse, HttpResponseBuilder, http::StatusCode};
 use maud::Markup;
 
-pub(crate) type ResponseResult<T> = Result<T, actix_web::Error>;
+pub struct MarkupResponse {
+    pub markup: Markup,
+    pub status: StatusCode,
+}
 
-pub(crate) struct MarkupResponse(pub(crate) Markup);
+impl MarkupResponse {
+    pub const fn new(markup: Markup, status: StatusCode) -> Self {
+        Self {
+            markup,
+            status,
+        }
+    }
 
-impl From<Markup> for MarkupResponse {
-    fn from(markup: Markup) -> Self {
-        Self(markup)
+    pub const fn ok(markup: Markup) -> Self {
+        Self::new(markup, StatusCode::OK)
+    }
+}
+
+impl From<MarkupResponse> for HttpResponse {
+    fn from(markup_response: MarkupResponse) -> Self {
+        HttpResponseBuilder::new(markup_response.status)
+            .content_type("text/html; charset=utf-8")
+            .body(markup_response.markup.0)
     }
 }
 
 impl Responder for MarkupResponse {
     fn respond_to(self, _: &HttpRequest) -> HttpResponse {
-        HttpResponse::Ok()
-            .content_type("text/html; charset=utf-8")
-            .body(self.0.0)
+        self.into()
     }
 }

@@ -3,12 +3,12 @@ use std::collections::HashSet;
 use sqlx::postgres::PgPool;
 use unidecode::unidecode;
 
-use crate::respond::ResponseResult;
+use crate::error::{SiteReportResult, IntoReport};
 use crate::robots::RobotPreview;
 
 const MAX_ROBOTS: i32 = 48;
 
-pub(crate) async fn search(db_pool: &PgPool, query: &str) -> ResponseResult<Vec<RobotPreview>> {
+pub(crate) async fn search(db_pool: &PgPool, query: &str) -> SiteReportResult<Vec<RobotPreview>> {
     let query_terms = match to_query_terms(query) {
         Some(query_terms) => query_terms,
         None => return Ok(Vec::new()),
@@ -20,19 +20,22 @@ pub(crate) async fn search(db_pool: &PgPool, query: &str) -> ResponseResult<Vec<
     // We only want to show each robot once, so keep track of the ids
     let mut found_ids = HashSet::new();
 
-    if let Some(number_matches) = search_by_number(db_pool, &query_terms, MAX_ROBOTS)
-        .await
-        .map_err(actix_web::error::ErrorInternalServerError)?
-    {
-        for robot in number_matches {
-            found_ids.insert(robot.id);
-            found_robots.push(robot);
-        }
+    let query_numbers = to_query_numbers(&query_terms);
+
+    if !query_numbers.is_empty() {
+        let number_matches = search_by_number(db_pool, &query_numbers, MAX_ROBOTS)
+            .await
+            .map_err(|err| err.into_report(format!("failed to search by numbers {:?}", query_numbers)))?;
+
+            for robot in number_matches {
+                found_ids.insert(robot.id);
+                found_robots.push(robot);
+            }
     }
 
     let ident_matches = search_by_ident(db_pool, &query_terms, MAX_ROBOTS - found_robots.len() as i32)
         .await
-        .map_err(actix_web::error::ErrorInternalServerError)?;
+        .map_err(|err| err.into_report(format!("failed search by idents {:?}", query_terms)))?;
 
     for robot in ident_matches {
         if !found_ids.contains(&robot.id) {
@@ -43,7 +46,7 @@ pub(crate) async fn search(db_pool: &PgPool, query: &str) -> ResponseResult<Vec<
 
     let full_text_matches = search_by_full_text(db_pool, query, MAX_ROBOTS - found_robots.len() as i32)
         .await
-        .map_err(actix_web::error::ErrorInternalServerError)?;
+        .map_err(|err| err.into_report(format!("failed to search by full text {:?}", query)))?;
 
     for robot in full_text_matches {
         if !found_ids.contains(&robot.id) {
@@ -95,22 +98,20 @@ fn to_query_terms(query: &str) -> Option<Vec<String>> {
     Some(query_terms)
 }
 
-async fn search_by_number(
-    db_pool: &PgPool,
-    query_terms: &[String],
-    limit: i32,
-) -> sqlx::Result<Option<Vec<RobotPreview>>>
-{
-    let query_numbers = query_terms
+fn to_query_numbers(query_terms: &[String]) -> Vec<i32> {
+    query_terms
         .iter()
         .filter_map(|term| term.parse::<i32>().ok())
-        .collect::<Vec<_>>();
+        .collect::<Vec<_>>()
+}
 
-    if query_numbers.is_empty() {
-        return Ok(None);
-    }
-
-    let robots = sqlx::query_as(
+async fn search_by_number(
+    db_pool: &PgPool,
+    query_numbers: &[i32],
+    limit: i32,
+) -> sqlx::Result<Vec<RobotPreview>>
+{
+    sqlx::query_as(
         "SELECT \
             id, robot_number, ident, prefix, suffix, plural, content_warning, image_thumb_path, \
             alt, custom_alt \
@@ -121,9 +122,7 @@ async fn search_by_number(
     .bind(&query_numbers)
     .bind(limit)
     .fetch_all(db_pool)
-    .await?;
-
-    Ok(Some(robots))
+    .await
 }
 
 async fn search_by_ident(

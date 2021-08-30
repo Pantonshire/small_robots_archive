@@ -2,7 +2,7 @@ use maud::{DOCTYPE, Markup, html};
 
 /// Returns a basic page whose body consists of three sections: header, main and footer,
 /// in that order.
-pub fn base(title: &str, header: Markup, main: Markup, footer: Markup) -> Markup {
+pub fn base_page(title: &str, header: Markup, main: Markup, footer: Markup) -> Markup {
     html! {
         (DOCTYPE)
         html {
@@ -32,7 +32,7 @@ pub fn base(title: &str, header: Markup, main: Markup, footer: Markup) -> Markup
 
 /// Returns a page with the default header and footer.
 pub fn archive_page(title: &str, content: Markup) -> Markup {
-    base(title, header(), html! { div class="content" { (content) } }, footer())
+    base_page(title, header(), html! { div class="content" { (content) } }, footer())
 }
 
 /// The default header, containing a navigation menu and search bar.
