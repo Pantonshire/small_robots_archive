@@ -498,7 +498,9 @@ async fn about_page(meta: web::Data<InstanceMeta>) -> MarkupResponse {
                     " on GitHub. You are free to clone the repository and set up your own instance of this archive!"
                 }
                 p {
-                    "TODO: link to guide on GitHub"
+                    "If you would like to set up your own instance, see "
+                    a class="link_text" href="https://github.com/Pantonshire/SmolBotBot/blob/main/README.md" { "the README in the SmolBotBot repository" }
+                    " ."
                 }
             }
             div class="section" {
