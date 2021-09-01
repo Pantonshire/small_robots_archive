@@ -7,6 +7,7 @@ mod robots;
 mod search;
 
 use std::env;
+use std::ffi::OsStr;
 use std::fmt;
 use std::io;
 use std::ops::Add;
@@ -25,6 +26,8 @@ const DEFAULT_BIND_ADDR: &str = "[::1]:8080";
 
 const BIND_ADDR_VAR: &str = "BIND_ADDRESS";
 const DB_URL_VAR: &str = "DATABASE_URL";
+const ARCHIVE_META_NAME_VAR: &str = "SBB_ARCHIVE_META_NAME";
+const ARCHIVE_META_URL_PREFIX_VAR: &str = "SBB_ARCHIVE_META_URL_PREFIX";
 
 const THH_BOOK_URL: &str
     = "https://www.hive.co.uk/Product/Thomas-Heasman-Hunt/Small-Robots--A-collection-of-one-hundred-mostly-useful-robot-friends/24078313";
@@ -320,10 +323,14 @@ async fn search_robots(pool: CloneData<PgPool>, query: web::Query<SearchQuery>) 
     )))
 }
 
-fn render_robot(robot: RobotFull) -> MarkupResponse {
+fn render_robot(meta: &InstanceMeta, robot: RobotFull) -> MarkupResponse {
     let full_name = robot.full_name();
 
     let tweet_link = format!("https://twitter.com/smolrobots/status/{}", robot.tweet_id);
+
+    let permalink = meta.url_prefix
+        .as_deref()
+        .map(|prefix| format!("{}/robot/{}/{}", prefix, robot.robot_number, robot.ident));
 
     let robot_content = html! {
         div class="robot_content" {
@@ -346,6 +353,12 @@ fn render_robot(robot: RobotFull) -> MarkupResponse {
 
                 p {
                     a class="link_text" href=(tweet_link) { "Go to original Tweet" }
+                }
+
+                @if let Some(permalink) = permalink {
+                    p {
+                        "Permalink: " a class="link_text" href=(permalink) { (permalink) }
+                    }
                 }
             }
         }
@@ -376,8 +389,13 @@ fn render_robot(robot: RobotFull) -> MarkupResponse {
     ))
 }
 
-#[get("/robots/{number}/{ident}")]
-async fn robot_page(pool: CloneData<PgPool>, path: web::Path<(i32, String)>) -> SiteReportResult<MarkupResponse> {
+#[get("/robot/{number}/{ident}")]
+async fn robot_page(
+    meta: web::Data<InstanceMeta>,
+    pool: CloneData<PgPool>,
+    path: web::Path<(i32, String)>
+) -> SiteReportResult<MarkupResponse>
+{
     let (number, ident) = path.into_inner();
 
     let robot: RobotFull = sqlx::query_as(
@@ -395,11 +413,15 @@ async fn robot_page(pool: CloneData<PgPool>, path: web::Path<(i32, String)>) -> 
     .and_then(|robot| robot.ok_or(SiteError::NotFound))
     .map_err(|err| err.report(format!("failed to get robot {}/{}", number, ident)))?;
 
-    Ok(render_robot(robot))
+    Ok(render_robot(&meta, robot))
 }
 
 #[get("/daily")]
-async fn daily_robot(pool: CloneData<PgPool>) -> SiteReportResult<MarkupResponse> {
+async fn daily_robot(
+    meta: web::Data<InstanceMeta>,
+    pool: CloneData<PgPool>
+) -> SiteReportResult<MarkupResponse>
+{
     let robot: RobotFull = sqlx::query_as(
         "SELECT \
             id, robot_number, ident, prefix, suffix, plural, content_warning, image_path, \
@@ -412,11 +434,15 @@ async fn daily_robot(pool: CloneData<PgPool>) -> SiteReportResult<MarkupResponse
     .await
     .map_err(|err| err.into_report("failed to get daily robot"))?;
 
-    Ok(render_robot(robot))
+    Ok(render_robot(&meta, robot))
 }
 
 #[get("/random")]
-async fn random_robot(pool: CloneData<PgPool>) -> SiteReportResult<MarkupResponse> {
+async fn random_robot(
+    meta: web::Data<InstanceMeta>,
+    pool: CloneData<PgPool>
+) -> SiteReportResult<MarkupResponse>
+{
     let robot: RobotFull = sqlx::query_as(
         "SELECT \
             id, robot_number, ident, prefix, suffix, plural, content_warning, image_path, \
@@ -429,11 +455,15 @@ async fn random_robot(pool: CloneData<PgPool>) -> SiteReportResult<MarkupRespons
     .await
     .map_err(|err| err.into_report("failed to get random robot"))?;
 
-    Ok(render_robot(robot))
+    Ok(render_robot(&meta, robot))
 }
 
 #[get("/about")]
-async fn about_page() -> MarkupResponse {
+async fn about_page(meta: web::Data<InstanceMeta>) -> MarkupResponse {
+    let instance_name = meta.name
+        .as_deref()
+        .unwrap_or("[not set]");
+
     MarkupResponse::ok(page::archive_page(
         "About",
         html! {
@@ -479,6 +509,12 @@ async fn about_page() -> MarkupResponse {
                     " on Twitter or "
                     a class="link_text" href="https://tech.lgbt/@pantonshire" { "@pantonshire@tech.lgbt" }
                     " on Mastodon."
+                }
+            }
+            div class="section" {
+                h2 id="instance" { "Instance info" }
+                ul {
+                    li { "Instance name: " (instance_name) }
                 }
             }
         }
@@ -552,6 +588,39 @@ impl Pagination {
     }
 }
 
+/// Metadata about this instance of the Small Robots Archive.
+#[derive(Clone, Debug)]
+struct InstanceMeta {
+    /// A name for this specific instance of the archive.
+    name: Option<String>,
+
+    /// The scheme to use for permalinks.
+    url_prefix: Option<String>,
+}
+
+impl InstanceMeta {
+    fn new_env() -> Result<InstanceMeta, ServerError> {
+        Ok(InstanceMeta {
+            name: env_var_opt(ARCHIVE_META_NAME_VAR)?,
+            url_prefix: env_var_opt(ARCHIVE_META_URL_PREFIX_VAR)?,
+        })
+    }
+}
+
+fn env_var_opt<K>(key: K) -> Result<Option<String>, env::VarError>
+where
+    K: AsRef<OsStr>
+{
+    match env::var(key) {
+        Ok(val) => match val.is_empty() {
+            true => Ok(None),
+            false => Ok(Some(val)),
+        },
+        Err(env::VarError::NotPresent) => Ok(None),
+        Err(err @ env::VarError::NotUnicode(_)) => Err(err),
+    }
+}
+
 #[actix_web::main]
 async fn main() -> Result<(), ServerError> {
     #[cfg(feature = "dotenv")] {
@@ -560,6 +629,11 @@ async fn main() -> Result<(), ServerError> {
 
     env_logger::init();
 
+    let instance_meta = {
+        let meta = InstanceMeta::new_env()?;
+        web::Data::new(meta)
+    };
+
     let pool = {
         let db_url = env::var(DB_URL_VAR)?;
         PgPool::connect(&db_url).await?
@@ -567,6 +641,7 @@ async fn main() -> Result<(), ServerError> {
 
     let app_factory = move || {
         App::new()
+            .app_data(instance_meta.clone())
             .app_data(CloneData::new(pool.clone()))
             .service(actix_files::Files::new("/static", "./static"))
             .service(actix_files::Files::new("/robot_images", "./generated/robot_images"))

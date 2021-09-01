@@ -8,7 +8,7 @@ pub(crate) struct RobotKey<'a> {
 
 impl<'a> RobotKey<'a> {
     pub(crate) fn page_link(&self) -> String {
-        format!("/robots/{}/{}", self.robot_number, self.ident)
+        format!("/robot/{}/{}", self.robot_number, self.ident)
     }
 }
 

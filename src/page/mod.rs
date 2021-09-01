@@ -1,5 +1,5 @@
 mod base;
-mod error_page;
+mod error;
 
 pub use base::*;
-pub use error_page::*;
+pub use error::*;
