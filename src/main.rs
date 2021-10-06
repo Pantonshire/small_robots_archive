@@ -12,7 +12,8 @@ use std::fmt;
 use std::io;
 use std::ops::Add;
 
-use actix_web::{get, HttpServer, App, web, HttpRequest};
+use actix_web::{self as aw, get, HttpServer, App, web, HttpRequest};
+use actix_files as fs;
 use sqlx::postgres::PgPool;
 use maud::{html, PreEscaped};
 use serde::Deserialize;
@@ -523,6 +524,20 @@ async fn about_page(meta: web::Data<InstanceMeta>) -> MarkupResponse {
     ))
 }
 
+#[get("/bootstrap/ids")]
+async fn bootstrap_ids() -> aw::Result<fs::NamedFile> {
+    fs::NamedFile::open("./generated/bootstrap/ids")
+        .map_err(aw::Error::from)
+        .map(|f| f.set_content_type(mime::TEXT_PLAIN))
+}
+
+#[get("/bootstrap/alt")]
+async fn bootstrap_alt() -> aw::Result<fs::NamedFile> {
+    fs::NamedFile::open("./generated/bootstrap/alt.json")
+        .map_err(aw::Error::from)
+        .map(|f| f.set_content_type(mime::APPLICATION_JSON))
+}
+
 async fn not_found(req: HttpRequest) -> SiteReportError {
     SiteError::NotFound
         .report(req.path().to_owned())
@@ -623,7 +638,7 @@ where
     }
 }
 
-#[actix_web::main]
+#[aw::main]
 async fn main() -> Result<(), ServerError> {
     #[cfg(feature = "dotenv")] {
         dotenv::dotenv().ok();
@@ -645,9 +660,10 @@ async fn main() -> Result<(), ServerError> {
         App::new()
             .app_data(instance_meta.clone())
             .app_data(CloneData::new(pool.clone()))
-            .service(actix_files::Files::new("/static", "./static"))
-            .service(actix_files::Files::new("/robot_images", "./generated/robot_images"))
-            .service(actix_files::Files::new("/bootstrap", "./generated/bootstrap"))
+            .service(fs::Files::new("/static", "./static"))
+            .service(fs::Files::new("/robot_images", "./generated/robot_images"))
+            .service(bootstrap_ids)
+            .service(bootstrap_alt)
             .service(landing_page)
             .service(all_robots)
             .service(all_robots_paged)

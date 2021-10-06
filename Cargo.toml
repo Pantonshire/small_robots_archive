@@ -17,6 +17,7 @@ tls = ["actix-web/rustls"]
 actix-web = "4.0.0-beta.8"
 actix-files = "0.6.0-beta.6"
 sqlx = { version = "0.5", features = ["runtime-actix-rustls", "postgres", "chrono"] }
+mime = "0.3"
 chrono = "0.4"
 maud = "0.22"
 serde = "1"

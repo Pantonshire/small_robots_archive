@@ -1387,6 +1387,7 @@ dependencies = [
  "env_logger",
  "log",
  "maud",
+ "mime",
  "serde",
  "sqlx",
  "unidecode",
