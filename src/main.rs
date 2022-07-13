@@ -508,7 +508,7 @@ async fn about_page(meta: web::Data<InstanceMeta>) -> MarkupResponse {
                 h2 id="contact" { "Contact" }
                 p {
                     "If you'd like to contact me directly, I'm "
-                    a class="link_text" href="https://twitter.com/pantonshiredev" { "@PantonshireDev" }
+                    a class="link_text" href="https://twitter.com/pantonshire" { "@pantonshire" }
                     " on Twitter or "
                     a class="link_text" href="https://tech.lgbt/@pantonshire" { "@pantonshire@tech.lgbt" }
                     " on Mastodon."
