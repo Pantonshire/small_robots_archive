@@ -276,6 +276,11 @@ ul.robots_grid {
     word-break: break-all;
 }
 
+.robots_row .robot_container {
+    flex-shrink: 0;
+    max-width: 12rem;   
+}
+
 .robot_container img {
     width: 100px;
     height: 100px;
