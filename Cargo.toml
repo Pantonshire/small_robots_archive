@@ -1,4 +1,6 @@
 [workspace]
 members = [
+    "sbbarch_mastodon"
 ]
+resolver = "2"
 
