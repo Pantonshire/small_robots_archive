@@ -2,7 +2,7 @@
 .DS_Store
 
 # Build
-/target/
+target/
 
 # Configuration
 .env
@@ -12,4 +12,4 @@
 .idea
 
 # Generated content e.g. robot images
-/generated/
+generated/
