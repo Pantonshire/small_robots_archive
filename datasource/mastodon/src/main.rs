@@ -4,6 +4,7 @@ mod mastodon;
 mod model;
 
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -40,6 +41,7 @@ struct Config {
   domain: String,
   username: String,
   database: DbConfig,
+  remastered_tags: Vec<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -74,6 +76,7 @@ async fn main() -> eyre::Result<()> {
   let sbbarch_mastodon = SbbarchMastodon {
     api_url,
     username: config.username,
+    remastered_tags: config.remastered_tags.into_iter().map(|s| s.to_uppercase()).collect(),
     http: http_client,
     // sql: sql_pool,
     max_id: args.max_id,
@@ -88,6 +91,7 @@ async fn main() -> eyre::Result<()> {
 struct SbbarchMastodon {
   api_url: String,
   username: String,
+  remastered_tags: HashSet<String>,
   http: reqwest::Client,
   // sql: PgPool,
   max_id: Option<String>,
@@ -125,8 +129,14 @@ impl SbbarchMastodon {
         println!();
         println!("{}", doc);
         if let Some((new_doc, parsed_group)) = parse_robot_doc(&doc) {
+          let remastered = status.tags.iter().any(|tag| {
+            let tag = tag.name.to_uppercase();
+            self.remastered_tags.contains(&tag)
+          });
+
           println!("{}", new_doc);
           println!("{:#?}", parsed_group);
+          println!("remastered: {}", remastered);
         }
         println!();
       }
