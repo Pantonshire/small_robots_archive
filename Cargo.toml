@@ -1,6 +1,17 @@
 [workspace]
-members = [
-    "sbbarch_mastodon"
-]
 resolver = "2"
+members = [
+    "common",
+    "parser",
+    "datasource/mastodon",
+]
 
+[workspace.dependencies]
+sbbarch_common = { path = "common" }
+sbbarch_parser = { path = "parser" }
+serde = { version = "1.0.198", features = ["derive"] }
+serde_json = "1.0.116"
+tokio = { version = "1.37.0", features = ["full"] }
+sqlx = { version = "0.7.4", default-features = false, features = ["runtime-tokio", "postgres", "chrono", "macros"] }
+bytes = "1.6.0"
+chrono = { version = "0.4.31", features = ["serde"] }

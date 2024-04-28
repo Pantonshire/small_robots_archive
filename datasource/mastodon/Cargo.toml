@@ -1,0 +1,30 @@
+[package]
+name = "sbbarch_mastodon"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+panic = "abort"
+
+[dependencies]
+sbbarch_common = { workspace = true }
+sbbarch_parser = { workspace = true }
+chrono = { workspace = true }
+enumscribe = { version = "0.4.0", default-features = false, features = ["std", "derive", "serde"] }
+html5ever = "0.26.0"
+libshire = { git = "https://github.com/pantonshire/libshire", features = ["serde"] }
+markup5ever_rcdom = "0.2.0"
+regex = "1.10.2"
+reqwest = "0.11.22"
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+tokio = { workspace = true }
+bytes = { workspace = true }
+unicode-normalization = "0.1.22"
+unidecode = "0.3.0"
+eyre = "0.6.12"
+toml = "0.8.12"
+clap = { version = "4.5.4", features = ["derive"] }
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"

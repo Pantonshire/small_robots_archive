@@ -1,0 +1,9 @@
+[package]
+name = "sbbarch_parser"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sbbarch_common = { workspace = true }
+regex = "1.10.2"
+unidecode = "0.3.0"
